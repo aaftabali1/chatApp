@@ -160,16 +160,19 @@ export const styles = StyleSheet.create({
         borderRadius: 5,
         paddingHorizontal: 15,
         backgroundColor: '#fff',
-        height: 80,
         marginBottom: 10,
+        paddingVertical: 10,
     },
     cavatar: {
         marginRight: 15,
+        width: 40,
+        height: 40,
     },
     cusername: {
         fontSize: 18,
         marginBottom: 5,
         fontWeight: 'bold',
+        color: '#333',
     },
     cmessage: {
         fontSize: 14,
@@ -183,4 +186,7 @@ export const styles = StyleSheet.create({
     ctime: {
         opacity: 0.5,
     },
+    mavatar: {
+        width: 30, height: 30, borderRadius: 15,
+    }
 });

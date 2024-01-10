@@ -1,4 +1,4 @@
-import React, {useEffect, useLayoutEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, Text, Pressable, SafeAreaView, FlatList} from 'react-native';
 
 import ChatComponent from '../components/ChatComponent';
@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 
 import socket from '../utils/socket';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useFocusEffect} from '@react-navigation/native';
 
 const Chat = () => {
   const [visible, setVisible] = useState(false);
@@ -20,21 +21,35 @@ const Chat = () => {
       const value = await AsyncStorage.getItem('username');
       if (value !== null) {
         setUser(value);
+        registerUser(value);
       }
     } catch (e) {
       console.error('Error while loading username!');
     }
   };
 
-  useLayoutEffect(() => {
-    function fetchGroups() {
-      fetch('http://localhost:4000/api')
-        .then(res => res.json())
-        .then(data => setMessages(data))
-        .catch(err => console.error(err));
-    }
-    fetchGroups();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      function fetchGroups() {
+        fetch('http://localhost:4000/api')
+          .then(res => res.json())
+          .then(data => {
+            setMessages(data);
+          })
+          .catch(err => console.error(err));
+      }
+      fetchGroups();
+      getMessages();
+    }, []),
+  );
+
+  const registerUser = (value: string) => {
+    socket.emit('saveUser', value);
+  };
+
+  const getMessages = () => {
+    socket.emit('getMessages', user);
+  };
 
   useEffect(() => {
     getUsername();
@@ -48,8 +63,17 @@ const Chat = () => {
   useEffect(() => {
     socket.on('messageList', messagesList => {
       setMessages(messagesList);
+      function fetchGroups() {
+        fetch('http://localhost:4000/api')
+          .then(res => res.json())
+          .then(data => {
+            setMessages(data);
+          })
+          .catch(err => console.error(err));
+      }
+      fetchGroups();
     });
-  }, [socket]);
+  }, []);
 
   return (
     <SafeAreaView style={styles.chatscreen}>
@@ -69,12 +93,12 @@ const Chat = () => {
           <FlatList
             data={messages}
             renderItem={({item}) => <ChatComponent item={item} />}
-            keyExtractor={item => item.id}
+            keyExtractor={(item: any) => item?.id}
           />
         ) : (
           <View style={styles.chatemptyContainer}>
-            <Text style={styles.chatemptyText}>No rooms created!</Text>
-            <Text>Click the icon above to create a Chat room</Text>
+            <Text style={styles.chatemptyText}>No messages!</Text>
+            <Text>Add a user to start messaging</Text>
           </View>
         )}
       </View>

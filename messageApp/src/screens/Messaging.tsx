@@ -1,11 +1,19 @@
-import React, {useEffect, useLayoutEffect, useState} from 'react';
-import {View, TextInput, Text, FlatList, Pressable} from 'react-native';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {
+  View,
+  TextInput,
+  Text,
+  FlatList,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MessageComponent from '../components/MessageComponent';
 import {styles} from '../utils/styles';
 import socket from '../utils/socket';
 
-const Messaging = ({route, navigation}) => {
+const Messaging = ({route, navigation}: any) => {
   const [chatMessages, setChatMessages] = useState([
     {
       id: '1',
@@ -22,6 +30,7 @@ const Messaging = ({route, navigation}) => {
   ]);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
+  const flatListRef = useRef<any>(null);
 
   //👇🏻 Access the chatroom's name and id
   const {name, id} = route.params;
@@ -47,7 +56,10 @@ const Messaging = ({route, navigation}) => {
   useLayoutEffect(() => {
     navigation.setOptions({title: name});
     socket.emit('findUser', id);
-    socket.on('foundUser', roomChats => setChatMessages(roomChats));
+    socket.on('foundUser', roomChats => {
+      flatListRef.current?.scrollToEnd();
+      setChatMessages(roomChats);
+    });
   }, []);
 
   useEffect(() => {
@@ -76,17 +88,26 @@ const Messaging = ({route, navigation}) => {
       sender: user,
       timestamp: {hour, mins},
     });
+    setMessage('');
   };
 
+  useEffect(() => {
+    flatListRef.current?.scrollToEnd({animated: true});
+  }, [chatMessages]);
+
   return (
-    <View style={styles.messagingscreen}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      style={styles.messagingscreen}>
       <View
         style={[
           styles.messagingscreen,
           {paddingVertical: 15, paddingHorizontal: 10},
         ]}>
-        {chatMessages[0] ? (
+        {chatMessages.length > 0 && chatMessages[0] ? (
           <FlatList
+            ref={flatListRef}
             data={chatMessages}
             renderItem={({item}) => (
               <MessageComponent item={item} user={user} />
@@ -101,6 +122,7 @@ const Messaging = ({route, navigation}) => {
       <View style={styles.messaginginputContainer}>
         <TextInput
           style={styles.messaginginput}
+          value={message}
           onChangeText={value => setMessage(value)}
         />
         <Pressable
@@ -111,7 +133,7 @@ const Messaging = ({route, navigation}) => {
           </View>
         </Pressable>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

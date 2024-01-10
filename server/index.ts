@@ -2,29 +2,6 @@ const express = require("express");
 const app = express();
 const PORT = 4000;
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-
-const http = require("http").Server(app);
-const cors = require("cors");
-
-app.use(cors());
-
-app.get("/api", (req: any, res: any) => {
-    res.json(messages);
-});
-
-http.listen(PORT, () => {
-    console.log(`Server listening on ${PORT}`);
-});
-
-const generateID = () => Math.random().toString(36).substring(2, 10);
-
-const socketIO = require('socket.io')(http, {
-    cors: {
-        origin: "<http://localhost:3000>"
-    }
-});
 
 let chatRooms: any = [];
 let users: any = [];
@@ -50,8 +27,37 @@ let messages: any = [
     // }
 ];
 
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+const http = require("http").Server(app);
+const cors = require("cors");
+
+app.use(cors());
+
+app.get("/api", (req: any, res: any) => {
+    res.json(messages);
+});
+
+http.listen(PORT, () => {
+    console.log(`Server listening on ${PORT}`);
+});
+
+const generateID = () => Math.random().toString(36).substring(2, 10);
+
+const socketIO = require('socket.io')(http, {
+    cors: {
+        origin: "<http://localhost:3000>"
+    }
+});
+
+
 socketIO.on("connection", (socket: any) => {
-    console.log(`⚡: ${socket.id} user just connected!`);
+    console.log(`⚡: ${socket.id} user just connected! `);
+
+    socket.on("saveUser", (username: string) => {
+        users.unshift({ id: generateID(), username, socketId: socket.id, socket });
+    });
 
     socket.on("createRoom", (roomName: any) => {
         socket.join(roomName);
@@ -66,7 +72,15 @@ socketIO.on("connection", (socket: any) => {
         //👇🏻 Adds the new group name to the chat rooms array
         messages.unshift({ id: generateID(), senderId, receiverId, messages: [] });
         //👇🏻 Returns the updated chat rooms via another event
-        socket.emit("messagesList", messages);
+        socket.emit("messageList", messages);
+        const receiverUser = users.find((user: any) => user.username == receiverId);
+        receiverUser.socket.emit("messageList", messages);
+    });
+
+    socket.on("getMessages", (username: string) => {
+        let result = messages.some((message: any) => message.receiverId == username || message.senderId == username);
+        //👇🏻 Sends the messages to the app
+        socket.emit("messageList", result);
     });
 
     socket.on("disconnect", () => {
@@ -93,7 +107,7 @@ socketIO.on("connection", (socket: any) => {
         const { message_id, message, sender, timestamp } = data;
 
         //👇🏻 Finds the room where the message was sent
-        let result = messages.filter((message: any) => message.id == message_id);
+        let result = messages.find((message: any) => message.id == message_id);
 
         //👇🏻 Create the data structure for the message
         const newMessage = {
@@ -101,14 +115,23 @@ socketIO.on("connection", (socket: any) => {
             text: message,
             sender,
             time: `${timestamp.hour}:${timestamp.mins}`,
+            read: false,
         };
         //👇🏻 Updates the chatroom messages
-        socket.to(result[0].name).emit("chatMessage", newMessage);
-        result[0].messages.push(newMessage);
+        socket.to(result?.name).emit("chatMessage", newMessage);
+        result?.messages.push(newMessage);
 
         //👇🏻 Trigger the events to reflect the new changes
-        socket.emit("messageList", messages);
-        socket.emit("foundUser", result[0]?.messages);
+        // socket.emit("messageList", messages);
+        // socket.emit("foundUser", result?.messages);
+
+        const receiverUser = users.find((user: any) => user.username == result.receiverId);
+        receiverUser.socket.emit("messageList", messages);
+        receiverUser.socket.emit("foundUser", result?.messages);
+
+        const senderUser = users.find((user: any) => user.username == result.senderId);
+        senderUser.socket.emit("messageList", messages);
+        senderUser.socket.emit("foundUser", result?.messages);
     });
 
     socket.on("newMessage", (data: any) => {

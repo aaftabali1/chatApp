@@ -1,4 +1,4 @@
-import {View, Text} from 'react-native';
+import {View, Text, Image} from 'react-native';
 import React from 'react';
 import {styles} from '../utils/styles';
 
@@ -20,6 +20,10 @@ export default function MessageComponent({item, user}) {
             color="black"
             style={styles.mavatar}
           /> */}
+          <Image
+            source={require('../assets/images/user.png')}
+            style={styles.mavatar}
+          />
           <View
             style={
               status
