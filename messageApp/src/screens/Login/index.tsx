@@ -9,9 +9,10 @@ import {
 } from 'react-native';
 
 //👇🏻 Import the app styles
-import {styles} from '../utils/styles';
+import {styles} from '../../utils/styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
+import axios from 'axios';
 
 const Login = () => {
   const navigation = useNavigation();
@@ -21,8 +22,32 @@ const Login = () => {
     try {
       //👇🏻 async function - saves the username to AsyncStorage
       //   redirecting to the Chat page
+
+      let data = JSON.stringify({
+        username: 'aftab',
+      });
+
+      let config = {
+        method: 'post',
+        maxBodyLength: Infinity,
+        url: 'http://localhost:4000/register',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: data,
+      };
+
+      axios
+        .request(config)
+        .then(response => {
+          console.log(JSON.stringify(response.data));
+          navigation.navigate('Chat');
+        })
+        .catch(error => {
+          navigation.navigate('Chat');
+          console.log(error);
+        });
       await AsyncStorage.setItem('username', username);
-      navigation.navigate('Chat');
     } catch (e) {
       Alert.alert('Error! While saving username');
     }

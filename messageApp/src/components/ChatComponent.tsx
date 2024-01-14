@@ -13,17 +13,14 @@ const ChatComponent = ({item}: any) => {
   useLayoutEffect(() => {
     setMessages(item.messages[item.messages.length - 1]);
 
-    const u = async () => {
-      return await getUsername();
+    const setUsername = async () => {
+      if (item.senderId == (await getUsername())) {
+        setUser(item.receiverId);
+      } else {
+        setUser(item.senderId);
+      }
     };
-
-    const uname = u;
-
-    if (item.senderId == uname) {
-      setUser(item.receiverId);
-    } else {
-      setUser(item.senderId);
-    }
+    setUsername();
   }, []);
 
   useEffect(() => {

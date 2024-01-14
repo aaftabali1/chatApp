@@ -7,27 +7,22 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  SafeAreaView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MessageComponent from '../components/MessageComponent';
-import {styles} from '../utils/styles';
-import socket from '../utils/socket';
+import MessageComponent from '../../components/MessageComponent';
+import styles from './styles';
+import socket from '../../utils/socket';
+import {useTranslation} from 'react-i18next';
+import {useNavigation} from '@react-navigation/native';
+import images from '../../utils/images';
 
-const Messaging = ({route, navigation}: any) => {
-  const [chatMessages, setChatMessages] = useState([
-    {
-      id: '1',
-      text: 'Hello guys, welcome!',
-      time: '07:50',
-      user: 'Tomer',
-    },
-    {
-      id: '2',
-      text: 'Hi Tomer, thank you! 😇',
-      time: '08:50',
-      user: 'David',
-    },
-  ]);
+const Messaging = ({route}: any) => {
+  const {t} = useTranslation();
+  const navigation = useNavigation();
+
+  const [chatMessages, setChatMessages] = useState([]);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
   const flatListRef = useRef<any>(null);
@@ -46,6 +41,10 @@ const Messaging = ({route, navigation}: any) => {
       console.error('Error while loading username!');
     }
   };
+
+  useEffect(() => {
+    navigation.setOptions({tabBarVisible: false});
+  }, []);
 
   //👇🏻 Sets the header title to the name chatroom's name
   useLayoutEffect(() => {
@@ -95,6 +94,21 @@ const Messaging = ({route, navigation}: any) => {
     flatListRef.current?.scrollToEnd({animated: true});
   }, [chatMessages]);
 
+  const userProfile = () => {
+    return (
+      <View style={styles.profileContainer}>
+        <Image source={images.user} style={styles.profileImage} />
+        <View style={styles.userDetailsContainer}>
+          <Text style={styles.userFullName}>Username</Text>
+          <Text style={styles.username}>userid</Text>
+          <Text style={styles.goToProfile}>Profile</Text>
+        </View>
+        <Image source={images.video} style={styles.videoCallImage} />
+        <Image source={images.phoneCall} style={styles.voiceCallImage} />
+      </View>
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -105,34 +119,31 @@ const Messaging = ({route, navigation}: any) => {
           styles.messagingscreen,
           {paddingVertical: 15, paddingHorizontal: 10},
         ]}>
-        {chatMessages.length > 0 && chatMessages[0] ? (
-          <FlatList
-            ref={flatListRef}
-            data={chatMessages}
-            renderItem={({item}) => (
-              <MessageComponent item={item} user={user} />
-            )}
-            keyExtractor={item => item.id}
-          />
-        ) : (
-          ''
-        )}
+        <FlatList
+          ref={flatListRef}
+          data={chatMessages?.length > 0 ? chatMessages : []}
+          ListHeaderComponent={userProfile}
+          renderItem={({item}) => <MessageComponent item={item} user={user} />}
+          keyExtractor={(item: any) => item.id}
+        />
       </View>
 
-      <View style={styles.messaginginputContainer}>
-        <TextInput
-          style={styles.messaginginput}
-          value={message}
-          onChangeText={value => setMessage(value)}
-        />
-        <Pressable
-          style={styles.messagingbuttonContainer}
-          onPress={handleNewMessage}>
-          <View>
-            <Text style={{color: '#f2f0f1', fontSize: 20}}>SEND</Text>
-          </View>
-        </Pressable>
-      </View>
+      <SafeAreaView style={styles.messaginginputContainer}>
+        <View style={styles.messaginginputContainerInner}>
+          <Image source={images.user} style={styles.avtar} />
+          <TextInput
+            style={styles.messaginginput}
+            value={message}
+            placeholder={t('writeYourComment')}
+            onChangeText={value => setMessage(value)}
+          />
+          <Pressable
+            style={styles.messagingbuttonContainer}
+            onPress={handleNewMessage}>
+            <Image source={images.send} style={styles.sendImage} />
+          </Pressable>
+        </View>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 };
