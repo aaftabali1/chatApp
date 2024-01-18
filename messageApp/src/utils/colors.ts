@@ -5,6 +5,6 @@ export default {
   tabBg: '#D6D5F0',
   borderColor: '#E5E5E5',
   primary: '#0CA83B',
-  blueLight: 'rgba(42, 35, 192, 0.1)',
+  blueLight: '#2a23c01a',
   primaryBlue: '#2A23C0',
 };

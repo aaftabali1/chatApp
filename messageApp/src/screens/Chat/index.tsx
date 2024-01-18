@@ -22,6 +22,8 @@ import {useTranslation} from 'react-i18next';
 import images from '../../utils/images';
 import axios from 'axios';
 
+import constants from '../../utils/constants';
+
 const Chat = () => {
   const {t} = useTranslation();
 
@@ -43,14 +45,22 @@ const Chat = () => {
     }
   };
 
-  const fetchGroups = (value: string) => {
+  const fetchGroups = async (value: string) => {
     const params = {
       username: value,
       // add more parameters as needed
     };
 
+    // let netIp = '';
+
+    // NetworkInfo.getIPV4Address()
+    //   .then(ip => {
+    //     netIp = ip;
+    //   })
+    //   .catch(error => console.error('Error fetching IP address:', error));
+
     axios
-      .get('http://localhost:4000/api', {params})
+      .get(`${constants.ip}/api`, {params})
       .then(response => {
         console.log('Response:', response.data);
         setMessages(response.data);
@@ -107,7 +117,7 @@ const Chat = () => {
       // fetchGroups(user);
       getUsername();
     });
-  }, []);
+  }, [socket]);
 
   return (
     <SafeAreaView style={styles.chatscreen}>

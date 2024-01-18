@@ -13,6 +13,7 @@ import {styles} from '../../utils/styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
+import constants from '../../utils/constants';
 
 const Login = () => {
   const navigation = useNavigation();
@@ -24,13 +25,13 @@ const Login = () => {
       //   redirecting to the Chat page
 
       let data = JSON.stringify({
-        username: 'aftab',
+        username: username,
       });
 
       let config = {
         method: 'post',
         maxBodyLength: Infinity,
-        url: 'http://localhost:4000/register',
+        url: `${constants.ip}/register`,
         headers: {
           'Content-Type': 'application/json',
         },

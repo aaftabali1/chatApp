@@ -9,6 +9,7 @@ import {
   Platform,
   Image,
   SafeAreaView,
+  TouchableOpacity,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MessageComponent from '../../components/MessageComponent';
@@ -17,18 +18,20 @@ import socket from '../../utils/socket';
 import {useTranslation} from 'react-i18next';
 import {useNavigation} from '@react-navigation/native';
 import images from '../../utils/images';
+import constants from '../../utils/constants';
 
 const Messaging = ({route}: any) => {
   const {t} = useTranslation();
   const navigation = useNavigation();
 
+  const {item, user: name} = route.params;
+
+  const id = item.id;
+
   const [chatMessages, setChatMessages] = useState([]);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
   const flatListRef = useRef<any>(null);
-
-  //👇🏻 Access the chatroom's name and id
-  const {name, id} = route.params;
 
   //👇🏻 This function gets the username saved on AsyncStorage
   const getUsername = async () => {
@@ -42,10 +45,6 @@ const Messaging = ({route}: any) => {
     }
   };
 
-  useEffect(() => {
-    navigation.setOptions({tabBarVisible: false});
-  }, []);
-
   //👇🏻 Sets the header title to the name chatroom's name
   useLayoutEffect(() => {
     navigation.setOptions({title: name});
@@ -54,18 +53,32 @@ const Messaging = ({route}: any) => {
 
   useLayoutEffect(() => {
     navigation.setOptions({title: name});
-    socket.emit('findUser', id);
-    socket.on('foundUser', roomChats => {
-      flatListRef.current?.scrollToEnd();
-      setChatMessages(roomChats);
-    });
+    // socket.emit('findUser', {
+    //   id,
+    //   receiver: item.receiverId,
+    //   sender: item.senderId,
+    // });
+    // socket.on('foundUser', roomChats => {
+    //   setTimeout(() => {
+    //     flatListRef.current?.scrollToEnd({animated: true});
+    //   }, 500);
+    //   setChatMessages(roomChats);
+    // });
   }, []);
 
   useEffect(() => {
+    socket.emit('findUser', {
+      id,
+      receiver: item.receiverId,
+      sender: item.senderId,
+    });
     socket.on('foundUser', roomChats => {
       setChatMessages(roomChats);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({animated: true});
+      }, 500);
     });
-  }, [socket]);
+  }, []);
 
   /*👇🏻 
         This function gets the time the user sends a message, then 
@@ -81,38 +94,52 @@ const Messaging = ({route}: any) => {
       new Date().getMinutes() < 10
         ? `0${new Date().getMinutes()}`
         : `${new Date().getMinutes()}`;
-    socket.emit('newChatMessage', {
+
+    const messageObject = {
       message,
-      message_id: id,
-      sender: user,
+      chat_id: id,
+      sender: item.senderId == user ? item.receiverId : item.senderId,
+      receiver: user,
       timestamp: {hour, mins},
-    });
+    };
+
+    socket.emit('newChatMessage', messageObject);
     setMessage('');
   };
 
-  useEffect(() => {
-    flatListRef.current?.scrollToEnd({animated: true});
-  }, [chatMessages]);
-
   const userProfile = () => {
     return (
-      <View style={styles.profileContainer}>
-        <Image source={images.user} style={styles.profileImage} />
-        <View style={styles.userDetailsContainer}>
-          <Text style={styles.userFullName}>Username</Text>
-          <Text style={styles.username}>userid</Text>
-          <Text style={styles.goToProfile}>Profile</Text>
+      <View
+        style={[
+          styles.profileContainer,
+          {backgroundColor: 'white', flexDirection: 'column', padding: 0},
+        ]}>
+        <View style={styles.profileContainer}>
+          <Image source={images.user} style={styles.profileImage} />
+          <View style={styles.userDetailsContainer}>
+            <Text style={styles.userFullName}>{name}</Text>
+            <Text style={styles.goToProfile}>{t('profile')}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('IncomingCall', {
+                username: name,
+                callType: constants.outgoingCall,
+                currentUser: user,
+              });
+            }}>
+            <Image source={images.video} style={styles.videoCallImage} />
+          </TouchableOpacity>
+          <Image source={images.phoneCall} style={styles.voiceCallImage} />
         </View>
-        <Image source={images.video} style={styles.videoCallImage} />
-        <Image source={images.phoneCall} style={styles.voiceCallImage} />
       </View>
     );
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 20}
       style={styles.messagingscreen}>
       <View
         style={[
@@ -122,6 +149,7 @@ const Messaging = ({route}: any) => {
         <FlatList
           ref={flatListRef}
           data={chatMessages?.length > 0 ? chatMessages : []}
+          stickyHeaderIndices={[0]}
           ListHeaderComponent={userProfile}
           renderItem={({item}) => <MessageComponent item={item} user={user} />}
           keyExtractor={(item: any) => item.id}

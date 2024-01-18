@@ -49,7 +49,7 @@ const BottomNavBar = ({state, descriptors, navigation}: any) => {
           image = images.phone;
         } else if (label === 'settings') {
           image = images.user;
-        } else if (label === 'network') {
+        } else if (label === 'contacts') {
           image = images.network;
         }
 

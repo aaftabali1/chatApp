@@ -11,16 +11,15 @@ import {
 import styles from './styles';
 import images from '../../utils/images';
 import {useTranslation} from 'react-i18next';
-import CustomHeader from '../../components/CustomHeader';
 
-const Calls = () => {
+const Contacts = () => {
   const {t} = useTranslation();
 
   return (
     <SafeAreaView style={styles.chatscreen}>
       <View style={styles.chattopContainer}>
         <View style={styles.chatheader}>
-          <Text style={styles.chatheading}>{t('calls')}</Text>
+          <Text style={styles.chatheading}>{t('contacts')}</Text>
         </View>
       </View>
 
@@ -28,15 +27,11 @@ const Calls = () => {
         <Image source={images.search} style={styles.searchIcon} />
         <TextInput style={styles.searchInput} placeholder={t('search')} />
       </View>
-
-      <View style={styles.header}>
-        <Text style={styles.discussHeadign}>{t('myDiscussions')}</Text>
-        <TouchableOpacity>
-          <Image source={images.filter} style={styles.filterImage} />
-        </TouchableOpacity>
+      <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+        <Text style={{}}>{t('noContactsToShow')}</Text>
       </View>
     </SafeAreaView>
   );
 };
 
-export default Calls;
+export default Contacts;

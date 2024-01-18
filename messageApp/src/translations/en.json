@@ -6,5 +6,9 @@
   "calls": "Calls",
   "settings": "Settings",
   "network": "YB Network",
-  "writeYourComment": "Write your comment..."
+  "writeYourComment": "Write your comment...",
+  "profile": "Profile",
+  "contacts": "Contacts",
+  "noContactsToShow": "No contacts to show",
+  "language": "Language"
 }

@@ -6,30 +6,6 @@ const PORT = 4000;
 
 const date = new Date();
 
-let chatRooms = [];
-let users = [];
-let messages = [
-  // {
-  //     id: 'somthing',
-  //     senderId: "aftab",
-  //     receiverId: "test",
-  //     messages: [
-  //         {
-  //             id: 'somtning',
-  //             text: "Hi",
-  //             time: "7:30",
-  //             sender: "aftab"
-  //         },
-  //         {
-  //             id: 'somtning',
-  //             text: "Hi",
-  //             time: "7:30",
-  //             sender: "test"
-  //         },
-  //     ]
-  // }
-];
-
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -58,23 +34,6 @@ app.get("/api", async (req, res) => {
     console.log("Error", e);
     res.json([]);
   }
-
-  // Use the executeQuery function
-  // db.executeQuery(
-  //   sql,
-  //   [req.query.username, req.query.username],
-  //   (error, results) => {
-  //     if (error) {
-  //       console.error("Error executing query:", error);
-  //     } else {
-  //       res.json(results);
-  //     }
-
-  //     // Don't forget to close the connection when done
-  //   }
-  // );
-
-  // res.json(messages);
 });
 
 app.post("/register", async (req, res) => {
@@ -97,36 +56,6 @@ app.post("/register", async (req, res) => {
         res.status(201).json({ message: "User registered successfully" });
       }
     }
-
-    // db.executeQuery(userSql, [username], (error, results) => {
-    //   if (error) {
-    //     console.error("Error registering user:", error);
-    //     res.status(500).json({ error: "Internal Server Error" });
-    //   } else {
-    //     if (results.length > 0) {
-    //       res.status(400).json({ message: "User already registered" });
-    //     } else {
-    //       // Insert the user into the database
-    //       const sql =
-    //         "INSERT INTO users (username, mobile, status, time) VALUES (?, ?, ?, ?)";
-    //       db.executeQuery(
-    //         sql,
-    //         [username, "", 1, new Date()],
-    //         (error, results) => {
-    //           if (error) {
-    //             console.error("Error registering user:", error);
-    //             res.status(500).json({ error: "Internal Server Error" });
-    //           } else {
-    //             console.log("User registered successfully");
-    //             res
-    //               .status(201)
-    //               .json({ message: "User registered successfully" });
-    //           }
-    //         }
-    //       );
-    //     }
-    //   }
-    // });
   } catch (error) {
     console.error("Unexpected error during registration:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -145,8 +74,80 @@ const socketIO = require("socket.io")(http, {
   },
 });
 
+socketIO.use((socket, next) => {
+  if (socket.handshake.query) {
+    let callerId = socket.handshake.query.callerId;
+    socket.user = callerId;
+    next();
+  }
+});
+
+// const { getIO, initIO } = require("./socket");
+
+// initIO(http);
+
+// getIO();
+
 socketIO.on("connection", (socket) => {
   console.log(`⚡: ${socket.id} user just connected! `);
+
+  // socket.join(socket.user);
+
+  socket.on("call", async (data) => {
+    console.log("Call method in index");
+    const findUserSql = "SELECT * FROM users WHERE username = ?";
+    const fetchUser = await db.executeQuery(findUserSql, [data.calleeId]);
+    const fetchUserCaller = await db.executeQuery(findUserSql, [data.callerId]);
+    let rtcMessage = data.rtcMessage;
+
+    socket.to(fetchUser[0].socket).emit("newCall", {
+      callerId: fetchUserCaller[0].username,
+      rtcMessage: rtcMessage,
+    });
+  });
+
+  socket.on("answerCall", async (data) => {
+    const findUserSql = "SELECT * FROM users WHERE username = ?";
+    console.log("AnswerCall in index");
+    let callerId = data.callerId;
+    rtcMessage = data.rtcMessage;
+
+    const fetchUser = await db.executeQuery(findUserSql, [data.calleeId]);
+    const fetchUserCaller = await db.executeQuery(findUserSql, [callerId]);
+
+    socket.to(fetchUserCaller[0].socket).emit("callAnswered", {
+      callee: fetchUser[0].username,
+      rtcMessage: rtcMessage,
+    });
+  });
+
+  socket.on("ICEcandidate", async (data) => {
+    console.log("ICEcandidate data.calleeId", data.calleeId);
+
+    const findUserSql = "SELECT * FROM users WHERE username = ?";
+    let calleeId = data.calleeId;
+
+    const fetchUser = await db.executeQuery(findUserSql, [calleeId]);
+    const fetchUserCaller = await db.executeQuery(findUserSql, [data.callerId]);
+    let rtcMessage = data.rtcMessage;
+
+    socket.to(fetchUser[0].socket).emit("ICEcandidate", {
+      sender: fetchUserCaller[0].username,
+      rtcMessage: rtcMessage,
+    });
+  });
+
+  socket.on("endCall", async (data) => {
+    const findUserSql = "SELECT * FROM users WHERE username = ?";
+    console.log("AnswerCall in index");
+    let callerId = data.callerId;
+
+    const fetchUser = await db.executeQuery(findUserSql, [data.calleeId]);
+    const fetchUserCaller = await db.executeQuery(findUserSql, [callerId]);
+
+    socket.to(fetchUserCaller[0].socket).emit("callEnd", {});
+    // socket.to(fetchUser[0].socket).emit("callEnd", {});
+  });
 
   socket.on("updateUser", (username) => {
     const sql = "UPDATE users SET socket = ?, time = ? WHERE username = ?";
@@ -228,44 +229,102 @@ socketIO.on("connection", (socket) => {
     console.log("🔥: A user disconnected");
   });
 
-  socket.on("findUser", (id) => {
-    //👇🏻 Filters the array by the ID
-    let result = messages.filter((message) => message.id == id);
-    //👇🏻 Sends the messages to the app
-    socket.emit("foundUser", result[0]?.messages);
+  socket.on("findUser", async ({ id, receiver, sender }) => {
+    const receiverQuery = "SELECT * FROM users WHERE username = ?";
+
+    const messagesQuery = "SELECT * FROM messages WHERE chatId = ?";
+
+    const receiverData = await db.executeQuery(receiverQuery, [receiver]);
+    const senderData = await db.executeQuery(receiverQuery, [sender]);
+
+    const allMessages = await db.executeQuery(messagesQuery, [id]);
+
+    socket.emit("foundUser", allMessages);
+    socket.emit("messageList", {
+      id: id,
+      senderId: sender,
+      receiverId: receiver,
+      messages: allMessages,
+    });
+
+    if (receiverData.length > 0) {
+      socket.to(receiverData[0].socket).emit("foundUser", allMessages);
+      socket.to(receiverData[0].socket).emit("messageList", {
+        id: id,
+        senderId: sender,
+        receiverId: receiver,
+        messages: allMessages,
+      });
+      console.log(receiverData[0].socket);
+    }
+    if (senderData.length > 0) {
+      socket.to(senderData[0].socket).emit("foundUser", allMessages);
+      socket.to(senderData[0].socket).emit("messageList", {
+        id: id,
+        senderId: sender,
+        receiverId: receiver,
+        messages: allMessages,
+      });
+      console.log(senderData[0].socket);
+    }
   });
 
-  socket.on("newChatMessage", (data) => {
-    //👇🏻 Destructures the property from the object
-    const { message_id, message, sender, timestamp } = data;
+  socket.on("newChatMessage", async (data) => {
+    try {
+      //👇🏻 Destructures the property from the object
+      const { chat_id, message, sender, receiver } = data;
 
-    //👇🏻 Finds the room where the message was sent
-    let result = messages.find((message) => message.id == message_id);
+      const insertQuery =
+        "INSERT INTO messages (`message`, `read`, `chatId`, `senderId`, `receiverId`, `time`) VALUES (?,?,?,?,?,?)";
 
-    //👇🏻 Create the data structure for the message
-    const newMessage = {
-      id: generateID(),
-      text: message,
-      sender,
-      time: `${timestamp.hour}:${timestamp.mins}`,
-      read: false,
-    };
-    //👇🏻 Updates the chatroom messages
-    socket.to(result?.name).emit("chatMessage", newMessage);
-    result?.messages.push(newMessage);
+      const receiverQuery = "SELECT * FROM users WHERE username = ?";
 
-    //👇🏻 Trigger the events to reflect the new changes
-    // socket.emit("messageList", messages);
-    // socket.emit("foundUser", result?.messages);
+      const messagesQuery = "SELECT * FROM messages WHERE chatId = ?";
 
-    const receiverUser = users.find(
-      (user) => user.username == result.receiverId
-    );
-    receiverUser.socket.emit("messageList", messages);
-    receiverUser.socket.emit("foundUser", result?.messages);
+      await db.executeQuery(insertQuery, [
+        message,
+        0,
+        chat_id,
+        sender,
+        receiver,
+        date,
+      ]);
 
-    const senderUser = users.find((user) => user.username == result.senderId);
-    senderUser.socket.emit("messageList", messages);
-    senderUser.socket.emit("foundUser", result?.messages);
+      const receiverData = await db.executeQuery(receiverQuery, [receiver]);
+      const senderData = await db.executeQuery(receiverQuery, [sender]);
+
+      const allMessages = await db.executeQuery(messagesQuery, [chat_id]);
+
+      socket.emit("foundUser", allMessages);
+
+      if (receiverData.length > 0) {
+        socket.to(receiverData[0].socket).emit("foundUser", allMessages);
+        socket.to(receiverData[0].socket).emit("messageList", {
+          id: chat_id,
+          senderId: sender,
+          receiverId: receiver,
+          messages: allMessages,
+        });
+        console.log("RECEIVER", receiverData[0].socket);
+      }
+      if (senderData.length > 0) {
+        socket.to(senderData[0].socket).emit("foundUser", allMessages);
+        socket.to(senderData[0].socket).emit("messageList", {
+          id: chat_id,
+          senderId: sender,
+          receiverId: receiver,
+          messages: allMessages,
+        });
+        console.log("SENDER", senderData[0].socket);
+      }
+      // receiverUser.socket.emit("messageList", allMessages);
+      // receiverUser.socket.emit("foundUser", result?.messages);
+
+      // const senderUser = users.find((user) => user.username == result.senderId);
+      // senderUser.socket.emit("messageList", messages);
+      // senderUser.socket.emit("foundUser", result?.messages);
+    } catch (e) {
+      console.log("Error in sending message", e);
+    }
   });
 });

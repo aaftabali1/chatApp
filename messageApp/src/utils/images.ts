@@ -10,4 +10,10 @@ export default {
   send: require('../assets/images/send.png'),
   video: require('../assets/images/video.png'),
   phoneCall: require('../assets/images/phone-call.png'),
+  audioOn: require('../assets/images/audio-on.png'),
+  micOn: require('../assets/images/mic-on.png'),
+  micOff: require('../assets/images/mic-off.png'),
+  videoOn: require('../assets/images/video-on.png'),
+  videoOff: require('../assets/images/video-off.png'),
+  decline: require('../assets/images/decline.png'),
 };

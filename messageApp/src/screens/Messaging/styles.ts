@@ -10,6 +10,7 @@ export default StyleSheet.create({
     backgroundColor: colors.tabBg,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    paddingBottom: 15,
   },
   messaginginput: {
     padding: 0,
@@ -47,6 +48,7 @@ export default StyleSheet.create({
     padding: 15,
     borderRadius: 20,
     flexDirection: 'row',
+    opacity: 1,
   },
   profileImage: {
     width: 40,

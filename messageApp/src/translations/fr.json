@@ -6,5 +6,9 @@
   "calls": "Appels",
   "settings": "Paramètres",
   "network": "Réseau YB",
-  "writeYourComment": "Rédiger votre commentaire ..."
+  "writeYourComment": "Rédiger votre commentaire ...",
+  "profile": "Profil",
+  "contacts": "Contacts",
+  "noContactsToShow": "Aucun contact à afficher",
+  "language": "Langue"
 }

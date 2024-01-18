@@ -2,8 +2,8 @@ import {View, Text, Image} from 'react-native';
 import React from 'react';
 import {styles} from '../utils/styles';
 
-export default function MessageComponent({item, user}) {
-  const status = item.sender !== user;
+export default function MessageComponent({item, user}: any) {
+  const status = item.senderId !== user;
 
   return (
     <View>
@@ -30,10 +30,15 @@ export default function MessageComponent({item, user}) {
                 ? styles.mmessage
                 : [styles.mmessage, {backgroundColor: 'rgb(194, 243, 194)'}]
             }>
-            <Text>{item.text}</Text>
+            <Text>{item.message}</Text>
           </View>
         </View>
-        <Text style={{marginLeft: 40}}>{item.time}</Text>
+        <Text style={{marginLeft: 40}}>
+          {new Date(item.time).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </Text>
       </View>
     </View>
   );

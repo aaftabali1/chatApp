@@ -30,8 +30,8 @@ const ChatComponent = ({item}: any) => {
   ///👇🏻 Navigates to the Messaging screen
   const handleNavigation = () => {
     navigation.navigate('Messaging', {
-      id: item.id,
-      name: item.name,
+      item: item,
+      user: user,
     });
   };
 
@@ -54,27 +54,34 @@ const ChatComponent = ({item}: any) => {
           <Text
             style={[
               styles.cusername,
-              !item?.read && messages?.text && {color: '#0000CD'},
+              // !item?.read &&
+              messages?.message && {color: '#0000CD'},
             ]}>
             {user}
           </Text>
           <Text
             style={[
               styles.cmessage,
-              !item?.read && messages?.text && {color: '#0000CD'},
+              // !messages?.read &&
+              messages?.message && {color: '#0000CD'},
             ]}>
-            {messages?.text ? messages.text : 'Tap to start chatting'}
+            {messages?.message ? messages.message : 'Tap to start chatting'}
           </Text>
         </View>
         <View>
           <Text
             style={[
               styles.ctime,
-              !item?.read && messages?.text && {color: '#0000CD'},
+              item?.read && messages?.message && {color: '#0000CD'},
             ]}>
-            {messages?.time ? messages.time : 'now'}
+            {messages?.time
+              ? new Date(messages.time).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : 'now'}
           </Text>
-          {!item?.read && messages?.text && (
+          {item?.read && messages?.message && (
             <View
               style={{
                 backgroundColor: 'red',

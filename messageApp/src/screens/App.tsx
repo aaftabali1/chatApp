@@ -10,6 +10,12 @@ import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import BottomNavBar from '../components/BottomNavBar';
 import CustomHeader from '../components/CustomHeader';
 import Calls from './Calls';
+import IncomingCall from './IncomingCall';
+import socket from '../utils/socket';
+import {navigationRef} from '../utils/navigationRef';
+import constants from '../utils/constants';
+import Settings from './Settings';
+import Contacts from './Contacts';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -22,6 +28,16 @@ export default function App() {
       .then(username => {
         if (username) {
           setInitScreen('Chat');
+          socket.on('newCall', data => {
+            console.log('Data is here line 37 App jS', data);
+
+            navigationRef.current?.navigate('IncomingCall', {
+              username: data.callerId,
+              currentUser: username,
+              callType: constants.incomingCall,
+              message: data.rtcMessage,
+            });
+          });
         } else {
           setInitScreen('Login');
         }
@@ -64,14 +80,14 @@ export default function App() {
         tabBar={props => <BottomNavBar {...props} />}>
         <Tab.Screen name="messages" component={Chat} />
         <Tab.Screen name="calls" component={Calls} />
-        <Tab.Screen name="settings" component={ChatScreens} />
-        <Tab.Screen name="network" component={ChatScreens} />
+        <Tab.Screen name="settings" component={Settings} />
+        <Tab.Screen name="contacts" component={Contacts} />
       </Tab.Navigator>
     );
   };
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator initialRouteName={initScreen}>
         <Stack.Screen
           name="Login"
@@ -92,6 +108,14 @@ export default function App() {
           component={Messaging}
           options={{
             header: props => <CustomHeader {...props} title="messaging" />,
+          }}
+        />
+
+        <Stack.Screen
+          name="IncomingCall"
+          component={IncomingCall}
+          options={{
+            headerShown: false,
           }}
         />
       </Stack.Navigator>

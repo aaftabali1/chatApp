@@ -1,6 +1,7 @@
-import { io } from 'socket.io-client';
+import {io} from 'socket.io-client';
+import constants from './constants';
 
-const URL = 'http://localhost:4000';
+const URL = `${constants.ip}`;
 
 const socket = io(URL);
 
