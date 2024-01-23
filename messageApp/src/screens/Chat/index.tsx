@@ -1,34 +1,28 @@
-import React, {useEffect, useState} from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  SafeAreaView,
-  FlatList,
-  TextInput,
-  Image,
-  TouchableOpacity,
-} from 'react-native';
-
-import ChatComponent from '../../components/ChatComponent';
-import styles from './styles';
-
-import Modal from '../../components/Modal';
-
-import socket from '../../utils/socket';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useFocusEffect} from '@react-navigation/native';
-import {useTranslation} from 'react-i18next';
-import images from '../../utils/images';
 import axios from 'axios';
-
+import React, {useEffect, useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {
+  FlatList,
+  Image,
+  SafeAreaView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import ChatComponent from '../../components/ChatComponent';
+import Modal from '../../components/Modal';
 import constants from '../../utils/constants';
+import images from '../../utils/images';
+import socket from '../../utils/socket';
+import styles from './styles';
 
 const Chat = () => {
   const {t} = useTranslation();
 
   const [visible, setVisible] = useState(false);
-  // const [rooms, setRooms] = useState([]);
+  const [offset, setOffset] = useState(0);
   const [messages, setMessages] = useState([]);
   const [user, setUser] = useState('');
 
@@ -48,22 +42,14 @@ const Chat = () => {
   const fetchGroups = async (value: string) => {
     const params = {
       username: value,
-      // add more parameters as needed
+      offset: offset,
     };
 
-    // let netIp = '';
-
-    // NetworkInfo.getIPV4Address()
-    //   .then(ip => {
-    //     netIp = ip;
-    //   })
-    //   .catch(error => console.error('Error fetching IP address:', error));
-
     axios
-      .get(`${constants.ip}/api`, {params})
+      .get(`${constants.ip}/api/chats`, {params})
       .then(response => {
-        console.log('Response:', response.data);
-        setMessages(response.data);
+        console.log('Response:', response?.data);
+        setMessages(response?.data);
       })
       .catch(error => {
         console.error(
@@ -103,7 +89,7 @@ const Chat = () => {
       //   };
 
       //   axios
-      //     .get('http://localhost:4000/api', {params})
+      //     .get('http://localhost:4000/api/chats', {params})
       //     .then(response => {
       //       console.log('Response:', response.data);
       //     })

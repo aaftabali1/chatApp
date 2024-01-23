@@ -10,7 +10,8 @@ import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import BottomNavBar from '../components/BottomNavBar';
 import CustomHeader from '../components/CustomHeader';
 import Calls from './Calls';
-import IncomingCall from './IncomingCall';
+import IncomingVideoCall from './IncomingVideoCall';
+import IncomingVoiceCall from './IncomingVoiceCall';
 import socket from '../utils/socket';
 import {navigationRef} from '../utils/navigationRef';
 import constants from '../utils/constants';
@@ -31,7 +32,19 @@ export default function App() {
           socket.on('newCall', data => {
             console.log('Data is here line 37 App jS', data);
 
-            navigationRef.current?.navigate('IncomingCall', {
+            navigationRef.current?.navigate('IncomingVideoCall', {
+              callId: data.callId,
+              username: data.callerId,
+              currentUser: username,
+              callType: constants.incomingCall,
+              message: data.rtcMessage,
+            });
+          });
+          socket.on('newAudioCall', data => {
+            console.log('Data is here line 43 App jS', data);
+
+            navigationRef.current?.navigate('IncomingVoiceCall', {
+              callId: data.callId,
               username: data.callerId,
               currentUser: username,
               callType: constants.incomingCall,
@@ -112,8 +125,16 @@ export default function App() {
         />
 
         <Stack.Screen
-          name="IncomingCall"
-          component={IncomingCall}
+          name="IncomingVideoCall"
+          component={IncomingVideoCall}
+          options={{
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+          name="IncomingVoiceCall"
+          component={IncomingVoiceCall}
           options={{
             headerShown: false,
           }}

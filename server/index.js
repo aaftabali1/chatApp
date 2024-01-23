@@ -1,10 +1,8 @@
 const express = require("express");
 const url = require("url");
-const db = require("./db");
+const database = require("./db");
 const app = express();
 const PORT = 4000;
-
-const date = new Date();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -14,18 +12,20 @@ const cors = require("cors");
 
 app.use(cors());
 
-app.get("/api", async (req, res) => {
+app.get("/api/chats", async (req, res) => {
   try {
-    const sql = "SELECT * FROM chats WHERE senderId = ? OR receiverId = ?";
-    const messagesSql = "SELECT * FROM messages WHERE chatId = ?";
+    const db = database.getDbServiceInstance();
 
-    const chats = await db.executeQuery(sql, [
-      req.query.username,
-      req.query.username,
-    ]);
+    const chats = await db.getUserChats({
+      sender: req.query.username,
+      receiver: req.query.username,
+    });
 
     for (let i = 0; i < chats.length; i++) {
-      const messages = await db.executeQuery(messagesSql, [chats[i].id]);
+      const messages = await db.getUserMessages({
+        chatId: chats[i].id,
+        offset: req.query.offset,
+      });
       chats[i].messages = messages;
     }
 
@@ -36,20 +36,35 @@ app.get("/api", async (req, res) => {
   }
 });
 
+app.get("/api/calls", async (req, res) => {
+  try {
+    const db = database.getDbServiceInstance();
+    const calls = await db.getCalls({
+      callerId: req.query.username,
+    });
+    res.json(calls);
+  } catch (e) {
+    console.log("Error", e);
+    res.json([]);
+  }
+});
+
 app.post("/register", async (req, res) => {
   try {
     const { username } = req.body;
 
-    const userSql = "SELECT * FROM users WHERE username = ?";
+    const db = database.getDbServiceInstance();
 
-    const userFound = await db.executeQuery(userSql, [username]);
+    const userFound = await db.getUser({ username });
 
     if (userFound.length > 0) {
       res.status(400).json({ message: "User already registered" });
     } else {
-      const sql =
-        "INSERT INTO users (username, mobile, status, time) VALUES (?, ?, ?, ?)";
-      const registerUser = db.executeQuery(sql, [username, "", 1, new Date()]);
+      const registerUser = await db.registerUser({
+        username,
+        mobile,
+        status: "1",
+      });
 
       if (registerUser) {
         console.log("User registered successfully");
@@ -94,28 +109,79 @@ socketIO.on("connection", (socket) => {
   // socket.join(socket.user);
 
   socket.on("call", async (data) => {
-    console.log("Call method in index");
-    const findUserSql = "SELECT * FROM users WHERE username = ?";
-    const fetchUser = await db.executeQuery(findUserSql, [data.calleeId]);
-    const fetchUserCaller = await db.executeQuery(findUserSql, [data.callerId]);
+    const db = database.getDbServiceInstance();
+
+    const { calleeId, callerId } = data;
+
+    //TODO:Need to handle if call is already exists
+    const fetchUser = await db.getUser({ username: calleeId });
+    const fetchUserCaller = await db.getUser({ username: callerId });
+
+    const callInsert = await db.insertCall({
+      callerId: callerId,
+      receiverId: calleeId,
+      type: "video",
+    });
+
     let rtcMessage = data.rtcMessage;
 
     socket.to(fetchUser[0].socket).emit("newCall", {
+      callId: callInsert.insertId,
+      callerId: fetchUserCaller[0].username,
+      rtcMessage: rtcMessage,
+    });
+  });
+
+  socket.on("audioCall", async (data) => {
+    const db = database.getDbServiceInstance();
+
+    const { calleeId, callerId } = data;
+
+    const fetchUser = await db.getUser({ username: calleeId });
+    const fetchUserCaller = await db.getUser({ username: callerId });
+
+    const callInsert = await db.insertCall({
+      callerId: callerId,
+      receiverId: calleeId,
+      type: "audio",
+    });
+
+    let rtcMessage = data.rtcMessage;
+
+    socket.to(fetchUser[0].socket).emit("newAudioCall", {
+      callId: callInsert.insertId,
       callerId: fetchUserCaller[0].username,
       rtcMessage: rtcMessage,
     });
   });
 
   socket.on("answerCall", async (data) => {
-    const findUserSql = "SELECT * FROM users WHERE username = ?";
-    console.log("AnswerCall in index");
-    let callerId = data.callerId;
-    rtcMessage = data.rtcMessage;
+    const { callerId, calleeId, rtcMessage, callId } = data;
 
-    const fetchUser = await db.executeQuery(findUserSql, [data.calleeId]);
-    const fetchUserCaller = await db.executeQuery(findUserSql, [callerId]);
+    const db = database.getDbServiceInstance();
+
+    await db.updateCall({ callId, status: "1" });
+
+    const fetchUser = await db.getUser({ username: calleeId });
+    const fetchUserCaller = await db.getUser({ username: callerId });
 
     socket.to(fetchUserCaller[0].socket).emit("callAnswered", {
+      callee: fetchUser[0].username,
+      rtcMessage: rtcMessage,
+    });
+  });
+
+  socket.on("answerAudioCall", async (data) => {
+    const { callerId, calleeId, rtcMessage, callId } = data;
+
+    const db = database.getDbServiceInstance();
+
+    await db.updateCall({ callId, status: "1" });
+
+    const fetchUser = await db.getUser({ username: calleeId });
+    const fetchUserCaller = await db.getUser({ username: callerId });
+
+    socket.to(fetchUserCaller[0].socket).emit("audioCallAnswered", {
       callee: fetchUser[0].username,
       rtcMessage: rtcMessage,
     });
@@ -124,12 +190,12 @@ socketIO.on("connection", (socket) => {
   socket.on("ICEcandidate", async (data) => {
     console.log("ICEcandidate data.calleeId", data.calleeId);
 
-    const findUserSql = "SELECT * FROM users WHERE username = ?";
-    let calleeId = data.calleeId;
+    const db = database.getDbServiceInstance();
 
-    const fetchUser = await db.executeQuery(findUserSql, [calleeId]);
-    const fetchUserCaller = await db.executeQuery(findUserSql, [data.callerId]);
-    let rtcMessage = data.rtcMessage;
+    const { calleeId, callerId, rtcMessage } = data;
+
+    const fetchUser = await db.getUser({ username: calleeId });
+    const fetchUserCaller = await db.getUser({ username: callerId });
 
     socket.to(fetchUser[0].socket).emit("ICEcandidate", {
       sender: fetchUserCaller[0].username,
@@ -138,41 +204,26 @@ socketIO.on("connection", (socket) => {
   });
 
   socket.on("endCall", async (data) => {
-    const findUserSql = "SELECT * FROM users WHERE username = ?";
-    console.log("AnswerCall in index");
-    let callerId = data.callerId;
+    const { callerId, calleeId } = data;
 
-    const fetchUser = await db.executeQuery(findUserSql, [data.calleeId]);
-    const fetchUserCaller = await db.executeQuery(findUserSql, [callerId]);
+    const db = database.getDbServiceInstance();
+
+    // const fetchUser = await db.getUser({ username: calleeId });
+    const fetchUserCaller = await db.getUser({ username: callerId });
 
     socket.to(fetchUserCaller[0].socket).emit("callEnd", {});
     // socket.to(fetchUser[0].socket).emit("callEnd", {});
   });
 
-  socket.on("updateUser", (username) => {
-    const sql = "UPDATE users SET socket = ?, time = ? WHERE username = ?";
-
-    // Use the executeQuery function
-    db.executeQuery(sql, [socket.id, date, username], (error, results) => {
-      if (error) {
-        console.error("Error executing query:", error);
-        // db.closeConnection();
-        // Handle the error appropriately
-      } else {
-        // db.closeConnection();
-        // Process the results as needed
-      }
-
-      // Don't forget to close the connection when done
-    });
+  socket.on("updateUser", async (username) => {
+    const db = database.getDbServiceInstance();
+    await db.updateUser({ socket: socket.id, username });
     // users.unshift({ id: generateID(), username, socketId: socket.id, socket });
   });
 
   socket.on("addUser", async ({ senderId, receiverId }) => {
-    const sql = "INSERT INTO chats (senderId, receiverId, time) VALUES (?,?,?)";
-    const findUserSql = "SELECT * FROM users WHERE username = ?";
-
-    await db.executeQuery(sql, [senderId, receiverId, date]);
+    const db = database.getDbServiceInstance();
+    await db.createChat({ sender: senderId, receiver: receiverId });
 
     socket.join(receiverId);
     //👇🏻 Adds the new group name to the chat rooms array
@@ -185,7 +236,7 @@ socketIO.on("connection", (socket) => {
       messages: [],
     });
 
-    const fetchUser = await db.executeQuery(findUserSql, [receiverId]);
+    const fetchUser = await db.getUser({ username: receiverId });
 
     if (fetchUser.length > 0) {
       socket.to(fetchUser[0].socket).emit("messageList", {
@@ -198,23 +249,10 @@ socketIO.on("connection", (socket) => {
     // receiverUser.socket.emit("messageList", []);
   });
 
-  socket.on("getMessages", (username) => {
-    const sql = "SELECT * FROM chats WHERE senderId = ? OR receiverId = ?";
+  socket.on("getMessages", async (username) => {
+    const db = database.getDbServiceInstance();
 
-    // Use the executeQuery function
-    db.executeQuery(sql, [username, username], (error, results) => {
-      if (error) {
-        console.error("Error executing query:", error);
-        // db.closeConnection();
-        // Handle the error appropriately
-      } else {
-        socket.emit("messageList", results);
-        // db.closeConnection();
-        // Process the results as needed
-      }
-
-      // Don't forget to close the connection when done
-    });
+    await db.getUserChats({ sender: username, receiver: username });
 
     // let result = messages.some(
     //   (message) =>
@@ -229,15 +267,12 @@ socketIO.on("connection", (socket) => {
     console.log("🔥: A user disconnected");
   });
 
-  socket.on("findUser", async ({ id, receiver, sender }) => {
-    const receiverQuery = "SELECT * FROM users WHERE username = ?";
+  socket.on("findUser", async ({ id, receiver, sender, offset }) => {
+    const db = database.getDbServiceInstance();
 
-    const messagesQuery = "SELECT * FROM messages WHERE chatId = ?";
-
-    const receiverData = await db.executeQuery(receiverQuery, [receiver]);
-    const senderData = await db.executeQuery(receiverQuery, [sender]);
-
-    const allMessages = await db.executeQuery(messagesQuery, [id]);
+    const receiverData = await db.getUser({ username: receiver });
+    const senderData = await db.getUser({ username: sender });
+    const allMessages = await db.getUserMessages({ chatId: id, offset });
 
     socket.emit("foundUser", allMessages);
     socket.emit("messageList", {
@@ -271,29 +306,21 @@ socketIO.on("connection", (socket) => {
 
   socket.on("newChatMessage", async (data) => {
     try {
+      const db = database.getDbServiceInstance();
       //👇🏻 Destructures the property from the object
-      const { chat_id, message, sender, receiver } = data;
+      const { chat_id, message, sender, receiver, offset } = data;
 
-      const insertQuery =
-        "INSERT INTO messages (`message`, `read`, `chatId`, `senderId`, `receiverId`, `time`) VALUES (?,?,?,?,?,?)";
-
-      const receiverQuery = "SELECT * FROM users WHERE username = ?";
-
-      const messagesQuery = "SELECT * FROM messages WHERE chatId = ?";
-
-      await db.executeQuery(insertQuery, [
+      await db.insertMessage({
         message,
-        0,
-        chat_id,
-        sender,
-        receiver,
-        date,
-      ]);
+        read: 0,
+        chatId: chat_id,
+        senderId: sender,
+        receiverId: receiver,
+      });
 
-      const receiverData = await db.executeQuery(receiverQuery, [receiver]);
-      const senderData = await db.executeQuery(receiverQuery, [sender]);
-
-      const allMessages = await db.executeQuery(messagesQuery, [chat_id]);
+      const receiverData = await db.getUser({ username: receiver });
+      const senderData = await db.getUser({ username: sender });
+      const allMessages = await db.getUserMessages({ chatId: chat_id, offset });
 
       socket.emit("foundUser", allMessages);
 

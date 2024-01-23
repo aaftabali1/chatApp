@@ -11,16 +11,15 @@ import {
 import socket from '../../utils/socket';
 import constants from '../../utils/constants';
 import {navigationRef} from '../../utils/navigationRef';
-import {t} from 'i18next';
 import images from '../../utils/images';
 import colors from '../../utils/colors';
 import {useNavigation} from '@react-navigation/native';
 import CustomHeader from '../../components/CustomHeader';
 
-const IncomingCall = ({route}: any) => {
+const IncomingVideoCall = ({route}: any) => {
   const navigation = useNavigation<any>();
 
-  const {username, callType, currentUser} = route.params;
+  const {username, callType, currentUser, callId} = route.params;
 
   const [type, setType] = useState(callType);
 
@@ -466,7 +465,7 @@ const IncomingCall = ({route}: any) => {
 
     setTimeout(() => {
       processCall();
-    }, 1500);
+    }, 500);
   }, []);
 
   let remoteRTCMessage = useRef(null);
@@ -543,6 +542,7 @@ const IncomingCall = ({route}: any) => {
 
     // 3. Send this session description to Bob uisng socket
     sendCall({
+      callId,
       calleeId: username,
       callerId: currentUser,
       rtcMessage: sessionDescription,
@@ -561,6 +561,7 @@ const IncomingCall = ({route}: any) => {
     // 6. Bob sets that as the local description and sends it to Alice
     await peerConnection.current.setLocalDescription(sessionDescription);
     answerCall({
+      callId,
       callerId: otherUserId.current,
       calleeId: currentUser,
       rtcMessage: sessionDescription,
@@ -794,4 +795,4 @@ const IncomingCall = ({route}: any) => {
   }
 };
 
-export default IncomingCall;
+export default IncomingVideoCall;

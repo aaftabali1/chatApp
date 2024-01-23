@@ -31,6 +31,7 @@ const Messaging = ({route}: any) => {
   const [chatMessages, setChatMessages] = useState([]);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
+  const [offset, setOffset] = useState(0);
   const flatListRef = useRef<any>(null);
 
   //👇🏻 This function gets the username saved on AsyncStorage
@@ -71,6 +72,7 @@ const Messaging = ({route}: any) => {
       id,
       receiver: item.receiverId,
       sender: item.senderId,
+      offset,
     });
     socket.on('foundUser', roomChats => {
       setChatMessages(roomChats);
@@ -101,6 +103,7 @@ const Messaging = ({route}: any) => {
       sender: item.senderId == user ? item.receiverId : item.senderId,
       receiver: user,
       timestamp: {hour, mins},
+      offset,
     };
 
     socket.emit('newChatMessage', messageObject);
@@ -122,7 +125,7 @@ const Messaging = ({route}: any) => {
           </View>
           <TouchableOpacity
             onPress={() => {
-              navigation.navigate('IncomingCall', {
+              navigation.navigate('IncomingVideoCall', {
                 username: name,
                 callType: constants.outgoingCall,
                 currentUser: user,
@@ -130,7 +133,16 @@ const Messaging = ({route}: any) => {
             }}>
             <Image source={images.video} style={styles.videoCallImage} />
           </TouchableOpacity>
-          <Image source={images.phoneCall} style={styles.voiceCallImage} />
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('IncomingVoiceCall', {
+                username: name,
+                callType: constants.outgoingCall,
+                currentUser: user,
+              });
+            }}>
+            <Image source={images.phoneCall} style={styles.voiceCallImage} />
+          </TouchableOpacity>
         </View>
       </View>
     );
