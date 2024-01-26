@@ -153,7 +153,10 @@ class db {
     try {
       const time = new Date();
       const response = await new Promise((resolve, reject) => {
-        const query = `INSERT INTO ${messagesTable} ('message', 'read', 'chatId', 'senderId', 'receiverId', 'time') VALUES (?,?,?,?,?,?)`;
+        const query =
+          "INSERT INTO " +
+          messagesTable +
+          " (`message`, `read`, `chatId`, `senderId`, `receiverId`, `time`) VALUES (?,?,?,?,?,?)";
 
         connection.query(
           query,

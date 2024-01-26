@@ -50,7 +50,7 @@ const BottomNavBar = ({state, descriptors, navigation}: any) => {
         } else if (label === 'settings') {
           image = images.user;
         } else if (label === 'contacts') {
-          image = images.network;
+          image = images.contacts;
         }
 
         return (

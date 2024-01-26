@@ -129,6 +129,7 @@ const Messaging = ({route}: any) => {
                 username: name,
                 callType: constants.outgoingCall,
                 currentUser: user,
+                callId: 0,
               });
             }}>
             <Image source={images.video} style={styles.videoCallImage} />
@@ -158,11 +159,12 @@ const Messaging = ({route}: any) => {
           styles.messagingscreen,
           {paddingVertical: 15, paddingHorizontal: 10},
         ]}>
+        {userProfile()}
         <FlatList
-          ref={flatListRef}
+          // ref={flatListRef}
           data={chatMessages?.length > 0 ? chatMessages : []}
-          stickyHeaderIndices={[0]}
-          ListHeaderComponent={userProfile}
+          inverted
+          showsVerticalScrollIndicator={false}
           renderItem={({item}) => <MessageComponent item={item} user={user} />}
           keyExtractor={(item: any) => item.id}
         />

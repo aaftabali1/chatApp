@@ -88,4 +88,36 @@ export default StyleSheet.create({
     width: 25,
     height: 25,
   },
+  callItemContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  userImage: {width: 40, height: 40},
+  username: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  bottomBorder: {
+    height: 1,
+    backgroundColor: colors.borderColor,
+  },
+  callStatus: {
+    fontWeight: '300',
+    fontStyle: 'italic',
+    fontSize: 13,
+  },
+  callIcons: {
+    width: 15,
+    height: 15,
+    resizeMode: 'contain',
+    marginEnd: 5,
+  },
+  callStatusMissed: {
+    fontWeight: '300',
+    fontStyle: 'italic',
+    fontSize: 13,
+    color: 'red',
+  },
 });

@@ -97,39 +97,44 @@ socketIO.use((socket, next) => {
   }
 });
 
-// const { getIO, initIO } = require("./socket");
-
-// initIO(http);
-
-// getIO();
-
 socketIO.on("connection", (socket) => {
   console.log(`⚡: ${socket.id} user just connected! `);
 
   // socket.join(socket.user);
-
   socket.on("call", async (data) => {
     const db = database.getDbServiceInstance();
 
-    const { calleeId, callerId } = data;
+    const { calleeId, callerId, callId, rtcMessage } = data;
 
     //TODO:Need to handle if call is already exists
     const fetchUser = await db.getUser({ username: calleeId });
     const fetchUserCaller = await db.getUser({ username: callerId });
 
-    const callInsert = await db.insertCall({
-      callerId: callerId,
-      receiverId: calleeId,
-      type: "video",
-    });
+    let callInsert = {};
 
-    let rtcMessage = data.rtcMessage;
+    if (callId !== 0) {
+      callInsert = await db.insertCall({
+        callerId: callerId,
+        receiverId: calleeId,
+        type: "video",
+      });
+    } else {
+      callInsert = {
+        insertId: callId,
+      };
+    }
 
-    socket.to(fetchUser[0].socket).emit("newCall", {
+    socketIO.to(fetchUser[0].socket).emit("newCall", {
       callId: callInsert.insertId,
       callerId: fetchUserCaller[0].username,
       rtcMessage: rtcMessage,
     });
+
+    // socket.to(fetchUser[0].socket).emit("newCall", {
+    //   callId: callInsert.insertId,
+    //   callerId: fetchUserCaller[0].username,
+    //   rtcMessage: rtcMessage,
+    // });
   });
 
   socket.on("audioCall", async (data) => {
@@ -165,10 +170,14 @@ socketIO.on("connection", (socket) => {
     const fetchUser = await db.getUser({ username: calleeId });
     const fetchUserCaller = await db.getUser({ username: callerId });
 
-    socket.to(fetchUserCaller[0].socket).emit("callAnswered", {
+    socketIO.to(fetchUserCaller[0].socket).emit("callAnswered", {
       callee: fetchUser[0].username,
       rtcMessage: rtcMessage,
     });
+    // socketIO.to(fetchUser[0].socket).emit("callAnswered", {
+    //   callee: fetchUserCaller[0].username,
+    //   rtcMessage: rtcMessage,
+    // });
   });
 
   socket.on("answerAudioCall", async (data) => {
@@ -181,7 +190,7 @@ socketIO.on("connection", (socket) => {
     const fetchUser = await db.getUser({ username: calleeId });
     const fetchUserCaller = await db.getUser({ username: callerId });
 
-    socket.to(fetchUserCaller[0].socket).emit("audioCallAnswered", {
+    socketIO.to(fetchUserCaller[0].socket).emit("audioCallAnswered", {
       callee: fetchUser[0].username,
       rtcMessage: rtcMessage,
     });
@@ -197,7 +206,7 @@ socketIO.on("connection", (socket) => {
     const fetchUser = await db.getUser({ username: calleeId });
     const fetchUserCaller = await db.getUser({ username: callerId });
 
-    socket.to(fetchUser[0].socket).emit("ICEcandidate", {
+    socketIO.to(fetchUser[0].socket).emit("ICEcandidate", {
       sender: fetchUserCaller[0].username,
       rtcMessage: rtcMessage,
     });
@@ -211,8 +220,25 @@ socketIO.on("connection", (socket) => {
     // const fetchUser = await db.getUser({ username: calleeId });
     const fetchUserCaller = await db.getUser({ username: callerId });
 
-    socket.to(fetchUserCaller[0].socket).emit("callEnd", {});
+    socketIO.to(fetchUserCaller[0].socket).emit("callEnd", {});
     // socket.to(fetchUser[0].socket).emit("callEnd", {});
+  });
+
+  socket.on("peer:nego:needed", async ({ to, offer }) => {
+    const db = database.getDbServiceInstance();
+    console.log("peer:nego:needed", offer);
+
+    const fetchUser = await db.getUser({ username: to });
+
+    socketIO
+      .to(fetchUser[0].socket)
+      .emit("peer:nego:needed", { from: socket.id, offer });
+  });
+
+  socket.on("peer:nego:done", async ({ to, ans }) => {
+    console.log("peer:nego:done", to);
+    // const fetchUser = await db.getUser({ username: to });
+    socketIO.to(to).emit("peer:nego:final", { from: socket.id, ans });
   });
 
   socket.on("updateUser", async (username) => {
@@ -253,13 +279,6 @@ socketIO.on("connection", (socket) => {
     const db = database.getDbServiceInstance();
 
     await db.getUserChats({ sender: username, receiver: username });
-
-    // let result = messages.some(
-    //   (message) =>
-    //     message.receiverId == username || message.senderId == username
-    // );
-    //👇🏻 Sends the messages to the app
-    // socket.emit("messageList", result);
   });
 
   socket.on("disconnect", () => {
@@ -290,7 +309,6 @@ socketIO.on("connection", (socket) => {
         receiverId: receiver,
         messages: allMessages,
       });
-      console.log(receiverData[0].socket);
     }
     if (senderData.length > 0) {
       socket.to(senderData[0].socket).emit("foundUser", allMessages);
@@ -300,7 +318,6 @@ socketIO.on("connection", (socket) => {
         receiverId: receiver,
         messages: allMessages,
       });
-      console.log(senderData[0].socket);
     }
   });
 
@@ -332,7 +349,6 @@ socketIO.on("connection", (socket) => {
           receiverId: receiver,
           messages: allMessages,
         });
-        console.log("RECEIVER", receiverData[0].socket);
       }
       if (senderData.length > 0) {
         socket.to(senderData[0].socket).emit("foundUser", allMessages);
@@ -342,7 +358,6 @@ socketIO.on("connection", (socket) => {
           receiverId: receiver,
           messages: allMessages,
         });
-        console.log("SENDER", senderData[0].socket);
       }
       // receiverUser.socket.emit("messageList", allMessages);
       // receiverUser.socket.emit("foundUser", result?.messages);

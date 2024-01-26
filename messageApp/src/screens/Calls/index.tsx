@@ -61,26 +61,54 @@ const Calls = () => {
   };
 
   const callsItem = ({item}: any) => {
+    console.log('====================================');
+    console.log(item);
+    console.log('====================================');
     return (
       <View style={{paddingHorizontal: 20}}>
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            paddingVertical: 10,
-            alignItems: 'center',
-          }}>
-          <Image source={images.user} style={{width: 40, height: 40}} />
+        <View style={styles.callItemContainer}>
+          <Image source={images.user} style={styles.userImage} />
           <View style={{marginHorizontal: 10}}>
-            <Text>
+            <Text style={styles.username}>
               {item.callerId == user ? item.receiverId : item.callerId}
             </Text>
-            <Text>
-              {item.callerId == user ? 'Outgoing Call' : 'Incoming Call'}
-            </Text>
+            <View style={{flexDirection: 'row'}}>
+              {item.type == 'auto' ? (
+                item.callerId == user ? (
+                  <>
+                    <Image
+                      source={images.outgoingCall}
+                      style={styles.callIcons}
+                    />
+                    <Text style={styles.callStatus}>Outgoing Call</Text>
+                  </>
+                ) : (
+                  <>
+                    <Image
+                      source={images.incomingCall}
+                      style={styles.callIcons}
+                    />
+                    <Text style={styles.callStatus}>Incoming Call</Text>
+                  </>
+                )
+              ) : item.status == 0 ? (
+                <>
+                  <Image
+                    source={images.missedVideoCall}
+                    style={styles.callIcons}
+                  />
+                  <Text style={styles.callStatusMissed}>Missed Video Call</Text>
+                </>
+              ) : (
+                <>
+                  <Image source={images.videoCall} style={styles.callIcons} />
+                  <Text style={styles.callStatus}>Video Call</Text>
+                </>
+              )}
+            </View>
           </View>
         </View>
-        <View style={{borderWidth: StyleSheet.hairlineWidth}} />
+        <View style={styles.bottomBorder} />
       </View>
     );
   };
@@ -98,14 +126,7 @@ const Calls = () => {
         <TextInput style={styles.searchInput} placeholder={t('search')} />
       </View>
 
-      <View style={styles.header}>
-        <Text style={styles.discussHeadign}>{t('myDiscussions')}</Text>
-        <TouchableOpacity>
-          <Image source={images.filter} style={styles.filterImage} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={{flex: 1}}>
+      <View style={{flex: 1, marginTop: 20, marginBottom: 10}}>
         <FlatList
           data={callList}
           renderItem={callsItem}

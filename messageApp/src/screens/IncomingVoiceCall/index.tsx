@@ -301,7 +301,7 @@ const IncomingVoiceCall = ({route}: any) => {
       }
     });
 
-    socket.on('callEnd', () => {
+    socket.on('audioCallEnd', () => {
       if (peerConnection.current) {
         peerConnection.current.close();
       }

@@ -1,20 +1,22 @@
-import React, {useEffect, useState, useRef} from 'react';
-import {View, Text, TouchableOpacity, Image} from 'react-native';
+import React, {useEffect, useState, useRef, useCallback} from 'react';
 import {
-  mediaDevices,
-  RTCPeerConnection,
-  RTCView,
-  RTCIceCandidate,
-  RTCSessionDescription,
-  MediaStream,
-} from 'react-native-webrtc';
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  SafeAreaView,
+  ImageBackground,
+} from 'react-native';
+import {mediaDevices, RTCView} from 'react-native-webrtc';
 import socket from '../../utils/socket';
 import constants from '../../utils/constants';
 import {navigationRef} from '../../utils/navigationRef';
 import images from '../../utils/images';
 import colors from '../../utils/colors';
 import {useNavigation} from '@react-navigation/native';
-import CustomHeader from '../../components/CustomHeader';
+import peer from '../../utils/peer';
+import styles from './styles';
+import InCallManager from 'react-native-incall-manager';
 
 const IncomingVideoCall = ({route}: any) => {
   const navigation = useNavigation<any>();
@@ -22,53 +24,19 @@ const IncomingVideoCall = ({route}: any) => {
   const {username, callType, currentUser, callId} = route.params;
 
   const [type, setType] = useState(callType);
-
   const otherUserId = useRef(null);
-
   // Stream of local user
-  const [localStream, setlocalStream] = useState(null);
-
+  const [localStream, setlocalStream] = useState<any>(null);
   /* When a call is connected, the video stream from the receiver is appended to this state in the stream*/
-  const [remoteStream, setRemoteStream] = useState(null);
-
-  const servers = {
-    iceServers: [
-      {
-        urls: 'stun:stun.l.google.com:19302',
-      },
-    ],
-  };
-
-  const peerConnection = useRef<RTCPeerConnection>();
-
-  // const peerConnection = useRef(
-  //   new RTCPeerConnection(
-  //     servers,
-  //     // {
-  //     //   iceServers: [
-  //     //     {
-  //     //       urls: 'stun:stun.l.google.com:19302',
-  //     //     },
-  //     //     {
-  //     //       urls: 'stun:stun1.l.google.com:19302',
-  //     //     },
-  //     //     {
-  //     //       urls: 'stun:stun2.l.google.com:19302',
-  //     //     },
-  //     //   ],
-  //     // },
-  //   ),
-  // );
-
+  const [remoteStream, setRemoteStream] = useState<any>(null);
   // Handling Mic status
   const [localMicOn, setlocalMicOn] = useState(true);
-
   // Handling Camera status
   const [localWebcamOn, setlocalWebcamOn] = useState(true);
 
   // Switch Camera
   function switchCamera() {
-    localStream.getVideoTracks().forEach(track => {
+    localStream.getVideoTracks().forEach((track: any) => {
       track._switchCamera();
     });
   }
@@ -76,7 +44,7 @@ const IncomingVideoCall = ({route}: any) => {
   // Enable/Disable Camera
   function toggleCamera() {
     localWebcamOn ? setlocalWebcamOn(false) : setlocalWebcamOn(true);
-    localStream.getVideoTracks().forEach(track => {
+    localStream.getVideoTracks().forEach((track: any) => {
       localWebcamOn ? (track.enabled = false) : (track.enabled = true);
     });
   }
@@ -84,166 +52,93 @@ const IncomingVideoCall = ({route}: any) => {
   // Enable/Disable Mic
   function toggleMic() {
     localMicOn ? setlocalMicOn(false) : setlocalMicOn(true);
-    localStream.getAudioTracks().forEach(track => {
+    localStream.getAudioTracks().forEach((track: any) => {
       localMicOn ? (track.enabled = false) : (track.enabled = true);
     });
   }
 
-  //   useEffect(() => {
-  //     InCallManager.start();
-  //     InCallManager.setKeepScreenOn(true);
-  //     InCallManager.setForceSpeakerphoneOn(true);
-
-  //     return () => {
-  //       InCallManager.stop();
-  //     };
-  //   }, []);
-
   function leave() {
     socket.emit('endCall', {
-      callerId: otherUserId.current,
+      callerId: username,
       calleeId: currentUser,
     });
-    if (peerConnection.current) {
-      peerConnection.current.close();
-    }
-    setlocalStream(null);
     streamCleanup();
-    navigationRef.current?.goBack();
+    // if (navigationRef.current?.canGoBack()) navigationRef.current?.goBack();
   }
 
   const streamCleanup = async () => {
     if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
+      localStream.getTracks().forEach((t: any) => t.stop());
       localStream.release();
+    }
+    if (remoteStream) {
+      remoteStream.getTracks().forEach((t: any) => t.stop());
+      remoteStream.release();
     }
     setlocalStream(null);
     setRemoteStream(null);
+    peer.close();
+    if (navigationRef.current?.canGoBack()) navigationRef.current?.goBack();
   };
 
-  const WebrtcRoomScreen = () => {
-    return (
-      <>
-        <CustomHeader title={username} navigation={navigationRef.current} />
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: '#050A0E',
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-          }}>
-          {remoteStream ? (
-            <RTCView
-              objectFit={'cover'}
-              style={{
-                flex: 1,
-                backgroundColor: '#050A0E',
-                marginTop: 8,
-              }}
-              streamURL={remoteStream.toURL()}
-            />
-          ) : null}
-          {localStream ? (
-            <View
-              style={{
-                backgroundColor: '#050A0E',
-                width: 100,
-                height: 150,
-                position: 'absolute',
-                bottom: 100,
-                right: 0,
-                borderRadius: 8,
-                zIndex: 12,
-                overflow: 'hidden',
-              }}>
-              <RTCView
-                objectFit={'cover'}
-                style={{
-                  backgroundColor: '#050A0E',
-                  flex: 1,
-                  borderRadius: 8,
-                  overflow: 'hidden',
-                }}
-                streamURL={localStream.toURL()}
-              />
-            </View>
-          ) : null}
-          <View
-            style={{
-              marginVertical: 12,
-              flexDirection: 'row',
-              justifyContent: 'space-evenly',
-            }}>
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.white,
-                padding: 10,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                leave();
-                setlocalStream(null);
-              }}>
-              <Image
-                source={images.decline}
-                style={{width: 30, height: 30, resizeMode: 'contain'}}
-              />
-            </TouchableOpacity>
+  const sendStreams = useCallback(() => {
+    if (localStream) {
+      for (const track of localStream.getTracks()) {
+        peer?.peer?.addTrack(track, localStream);
+      }
+    }
+  }, [localStream]);
 
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.white,
-                padding: 10,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                toggleMic();
-              }}>
-              <Image
-                source={localMicOn ? images.micOn : images.micOff}
-                style={{width: 30, height: 30, resizeMode: 'contain'}}
-              />
-            </TouchableOpacity>
+  const handleNegoNeedIncomming = useCallback(
+    async ({from, offer}: any) => {
+      const ans = await peer.getAnswer(offer);
+      socket.emit('peer:nego:done', {to: from, ans});
+    },
+    [socket],
+  );
 
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.white,
-                padding: 10,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                toggleCamera();
-              }}>
-              <Image
-                source={localWebcamOn ? images.videoOn : images.videoOff}
-                style={{width: 30, height: 30, resizeMode: 'contain'}}
-              />
-            </TouchableOpacity>
+  const handleNegoNeedFinal = useCallback(async ({ans}: any) => {
+    await peer.setLocalDescription(ans);
+  }, []);
 
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.white,
-                padding: 10,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                switchCamera();
-              }}>
-              <Image
-                source={localMicOn ? images.video : images.video}
-                style={{width: 30, height: 30, resizeMode: 'contain'}}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </>
-    );
-  };
+  const handleCallAnswered = useCallback(
+    async (data: any) => {
+      peer.setLocalDescription(data.rtcMessage);
+      setType(constants.webRTC);
+      sendStreams();
+    },
+    [sendStreams, socket],
+  );
+
+  const handleCallEnd = useCallback(() => {
+    streamCleanup();
+    // if (navigationRef.current?.canGoBack()) navigationRef.current?.goBack();
+  }, [socket, streamCleanup]);
+
+  useEffect(() => {
+    socket.on('callAnswered', handleCallAnswered);
+
+    socket.on('callEnd', handleCallEnd);
+
+    socket.on('peer:nego:needed', handleNegoNeedIncomming);
+    socket.on('peer:nego:final', handleNegoNeedFinal);
+
+    return () => {
+      socket.off('callAnswered', handleCallAnswered);
+      socket.off('callEnd', handleCallEnd);
+      socket.off('peer:nego:needed', handleNegoNeedIncomming);
+      socket.off('peer:nego:final', handleNegoNeedFinal);
+    };
+  }, [
+    socket,
+    handleNegoNeedFinal,
+    handleNegoNeedIncomming,
+    handleCallAnswered,
+    handleCallEnd,
+  ]);
 
   const setupWebRTC = async () => {
-    let isFront = false;
-
-    peerConnection.current = new RTCPeerConnection(servers);
+    let isFront = true;
 
     const sourceInfos: any = await mediaDevices.enumerateDevices();
 
@@ -268,515 +163,293 @@ const IncomingVideoCall = ({route}: any) => {
       },
     });
 
-    if (stream) {
-      setlocalStream(stream);
-      // peerConnection.current.addStream(stream);
-      stream.getTracks().forEach(track => {
-        peerConnection.current.addTrack(track, stream);
-      });
-    }
-
-    (peerConnection.current as any).ontrack = (event: any) => {
-      console.log('Received remote track:', event.track);
-
-      // Assuming setRemoteStream is a function to set the remote stream state
-      setRemoteStream((prevRemoteStream: any) => {
-        if (!prevRemoteStream) {
-          // If the remote stream state is not set, create a new MediaStream
-          const newRemoteStream = new MediaStream();
-          newRemoteStream.addTrack(event.track);
-          return newRemoteStream;
-        } else {
-          // If the remote stream state is set, add the track to the existing stream
-          prevRemoteStream.addTrack(event.track);
-          return prevRemoteStream;
-        }
-      });
-    };
-
-    peerConnection.current.onicecandidate = event => {
-      if (event.candidate) {
-        sendICEcandidate({
-          calleeId: otherUserId.current,
-          rtcMessage: {
-            label: event.candidate.sdpMLineIndex,
-            id: event.candidate.sdpMid,
-            candidate: event.candidate.candidate,
-          },
-        });
-      } else {
-        console.log('End of candidates.');
-      }
-    };
-
-    if (callType == constants.incomingCall) {
-      remoteRTCMessage.current = route.params.message;
-    }
-
-    socket.on('callAnswered', data => {
-      // 7. When Alice gets Bob's session description, she sets that as the remote description with `setRemoteDescription` method.
-
-      remoteRTCMessage.current = data.rtcMessage;
-      peerConnection.current.setRemoteDescription(
-        new RTCSessionDescription(remoteRTCMessage.current),
-      );
-      setType(constants.webRTC);
-    });
-
-    socket.on('ICEcandidate', data => {
-      let message = data.rtcMessage;
-
-      if (peerConnection.current) {
-        peerConnection?.current
-          .addIceCandidate(
-            new RTCIceCandidate({
-              candidate: message.candidate,
-              sdpMid: message.id,
-              sdpMLineIndex: message.label,
-            }),
-          )
-          .then(data => {
-            console.log('SUCCESS');
-          })
-          .catch(err => {
-            console.log('Error', err);
-          });
-      }
-    });
-
-    socket.on('callEnd', () => {
-      if (peerConnection.current) {
-        peerConnection.current.close();
-      }
-      streamCleanup();
-      navigationRef.current?.goBack();
-    });
-
-    // Alice creates an RTCPeerConnection object with an `onicecandidate` handler, which runs when network candidates become available.
-    peerConnection.current.onicecandidate = event => {
-      if (event.candidate) {
-        // Alice sends serialized candidate data to Bob using Socket
-        sendICEcandidate({
-          calleeId: otherUserId.current,
-          callerId: currentUser,
-          rtcMessage: {
-            label: event.candidate.sdpMLineIndex,
-            id: event.candidate.sdpMid,
-            candidate: event.candidate.candidate,
-          },
-        });
-      } else {
-        console.log('End of candidates.');
-      }
-    };
+    setlocalStream(stream);
   };
 
   useEffect(() => {
-    let isFront = false;
     otherUserId.current = username;
 
     navigation.setOptions({title: username});
 
-    /*The MediaDevices interface allows you to access connected media inputs such as cameras and microphones. We ask the user for permission to access those media inputs by invoking the mediaDevices.getUserMedia() method. */
-    // mediaDevices.enumerateDevices().then((sourceInfos: any) => {
-    //   let videoSourceId;
-    //   for (let i = 0; i < sourceInfos.length; i++) {
-    //     const sourceInfo = sourceInfos[i];
-    //     if (
-    //       sourceInfo.kind == 'videoinput' &&
-    //       sourceInfo.facing == (isFront ? 'user' : 'environment')
-    //     ) {
-    //       videoSourceId = sourceInfo.deviceId;
-    //     }
-    //   }
+    setupWebRTC();
 
-    //   const remote = new MediaStream();
-    //   setRemoteStream(remote);
-
-    //   mediaDevices
-    //     .getUserMedia({
-    //       audio: true,
-    //       video: {
-    //         mandatory: {
-    //           minWidth: 500, // Provide your own width, height and frame rate here
-    //           minHeight: 300,
-    //           minFrameRate: 30,
-    //         },
-    //         facingMode: isFront ? 'user' : 'environment',
-    //         optional: videoSourceId ? [{sourceId: videoSourceId}] : [],
-    //       },
-    //     })
-    //     .then(stream => {
-    //       // Get local stream!
-    //       setlocalStream(stream);
-
-    //       console.log('====================================');
-    //       console.log('STREADDDDD', stream);
-    //       console.log('====================================');
-
-    //       // setup stream listening
-
-    //       //   stream
-    //       //     .getTracks()
-    //       //     .forEach(track => peerConnection.current.addTrack(track, stream));
-
-    //       stream.getTracks().forEach(track => {
-    //         const senders = peerConnection.current.getSenders();
-    //         senders.forEach(sender => {
-    //           if (sender.track) {
-    //             sender.replaceTrack(track);
-    //           }
-    //         });
-    //       });
-    //     })
-    //     .catch(error => {
-    //       // Log error
-    //       console.log('====================================');
-    //       console.log('Error at line 251', error);
-    //       console.log('====================================');
-    //     });
-    // });
-
-    // (peerConnection.current as any).ontrack = event => {
-    //   event.streams[0].getTracks().forEach(track => {
-    //     remote.addTrack(track);
-    //   });
-    // };
-
-    // peerConnection.current.ontrack = event => {
-    //   event.streams[0].getTracks().forEach(track => {
-    //     remote.addTrack(track);
-    //   });
-    // };
-
-    // peerConnection.current.onaddstream = event => {
-    //   console.log('====================================EVENT STREAM');
-    //   console.log(event.stream);
-    //   console.log('====================================');
-    //   setRemoteStream(event.stream);
-    // };
-
-    // (peerConnection.current as any).ontrack = (event: any) => {
-    //   console.log('====================================EVENT STREAM');
-    //   console.log(event.streams[0]);
-    //   console.log('====================================');
-    //   setRemoteStream(event.streams[0]);
-    // };
-
-    setTimeout(() => {
+    if (callType == constants.outgoingCall) {
       processCall();
-    }, 500);
+    } else {
+      InCallManager.start();
+      InCallManager.startRingtone();
+      InCallManager.setForceSpeakerphoneOn(true);
+      // InCallManager.startProximitySensor();
+      InCallManager.setKeepScreenOn(true);
+    }
+
+    return () => {
+      InCallManager.stop();
+      // InCallManager.stopProximitySensor();
+      InCallManager.setKeepScreenOn(false);
+    };
   }, []);
 
-  let remoteRTCMessage = useRef(null);
+  const handleNegoNeeded = useCallback(async () => {
+    const offer = await peer.getOffer();
+    console.log('NEG NEEEEDDED');
+
+    socket.emit('peer:nego:needed', {offer, to: username});
+  }, [socket, username]);
 
   useEffect(() => {
-    // socket.on('newCall', data => {
-    //   console.log('Data is here line 235', data);
-    //   remoteRTCMessage.current = data.rtcMessage;
-    //   otherUserId.current = data.callerId;
-    //   setType(constants.incomingCall);
-    // });
-    // if (callType == constants.incomingCall) {
-    //   remoteRTCMessage.current = route.params.message;
-    // }
-    // socket.on('callAnswered', data => {
-    //   // 7. When Alice gets Bob's session description, she sets that as the remote description with `setRemoteDescription` method.
-    //   remoteRTCMessage.current = data.rtcMessage;
-    //   peerConnection.current.setRemoteDescription(
-    //     new RTCSessionDescription(remoteRTCMessage.current),
-    //   );
-    //   setType(constants.webRTC);
-    // });
-    // socket.on('ICEcandidate', data => {
-    //   let message = data.rtcMessage;
-    //   if (peerConnection.current) {
-    //     peerConnection?.current
-    //       .addIceCandidate(
-    //         new RTCIceCandidate({
-    //           candidate: message.candidate,
-    //           sdpMid: message.id,
-    //           sdpMLineIndex: message.label,
-    //         }),
-    //       )
-    //       .then(data => {
-    //         console.log('SUCCESS');
-    //       })
-    //       .catch(err => {
-    //         console.log('Error', err);
-    //       });
-    //   }
-    // });
-    // socket.on('callEnd', () => {
-    //   peerConnection.current.close();
-    //   setlocalStream(null);
-    //   navigationRef.current?.goBack();
-    // });
-    // // Alice creates an RTCPeerConnection object with an `onicecandidate` handler, which runs when network candidates become available.
-    // peerConnection.current.onicecandidate = event => {
-    //   if (event.candidate) {
-    //     // Alice sends serialized candidate data to Bob using Socket
-    //     sendICEcandidate({
-    //       calleeId: otherUserId.current,
-    //       callerId: currentUser,
-    //       rtcMessage: {
-    //         label: event.candidate.sdpMLineIndex,
-    //         id: event.candidate.sdpMid,
-    //         candidate: event.candidate.candidate,
-    //       },
-    //     });
-    //   } else {
-    //     console.log('End of candidates.');
-    //   }
-    // };
+    peer?.peer?.addEventListener('negotiationneeded', handleNegoNeeded);
+    return () => {
+      peer?.peer?.removeEventListener('negotiationneeded', handleNegoNeeded);
+    };
+  }, [handleNegoNeeded]);
+
+  useEffect(() => {
+    peer?.peer?.addEventListener('track', async ev => {
+      const remoteStream = ev.streams;
+      console.log('GOT TRACKS!!');
+      setRemoteStream(remoteStream[0]);
+    });
   }, []);
 
   async function processCall() {
-    await setupWebRTC();
+    const offer = await peer.getOffer();
 
-    // 1. Alice runs the `createOffer` method for getting SDP.
-    const sessionDescription = await peerConnection.current.createOffer();
-
-    // 2. Alice sets the local description using `setLocalDescription`.
-    await peerConnection.current.setLocalDescription(sessionDescription);
-
-    // 3. Send this session description to Bob uisng socket
     sendCall({
       callId,
       calleeId: username,
       callerId: currentUser,
-      rtcMessage: sessionDescription,
+      rtcMessage: offer,
     });
   }
 
   async function processAccept() {
-    // 4. Bob sets the description, Alice sent him as the remote description using `setRemoteDescription()`
-    peerConnection.current.setRemoteDescription(
-      new RTCSessionDescription(remoteRTCMessage.current),
-    );
-
-    // 5. Bob runs the `createAnswer` method
-    const sessionDescription = await peerConnection.current.createAnswer();
-
-    // 6. Bob sets that as the local description and sends it to Alice
-    await peerConnection.current.setLocalDescription(sessionDescription);
+    const ans = await peer.getAnswer(route.params.message);
     answerCall({
       callId,
-      callerId: otherUserId.current,
+      callerId: username,
       calleeId: currentUser,
-      rtcMessage: sessionDescription,
+      rtcMessage: ans,
     });
+    setTimeout(() => {
+      sendStreams();
+    }, 500);
   }
 
-  function answerCall(data) {
+  function answerCall(data: any) {
     socket.emit('answerCall', data);
   }
 
-  function sendCall(data) {
+  function sendCall(data: any) {
     socket.emit('call', data);
   }
 
-  function sendICEcandidate(data) {
-    socket.emit('ICEcandidate', data);
-  }
+  const WebrtcRoomScreen = () => {
+    return (
+      <View style={styles.callingContainer}>
+        <SafeAreaView />
+        <View style={styles.headerContainer}>
+          <Text style={styles.callTitle}>{username}</Text>
+          <View style={styles.timeContainer}>
+            <Image
+              style={styles.ongoingCallImage}
+              source={images.ongoingCall}
+            />
+            <Text>05:33</Text>
+          </View>
+        </View>
+        {/* <CustomHeader title={username} navigation={navigationRef.current} /> */}
+        <View style={styles.container}>
+          <View style={styles.callViewContainer}>
+            <View style={styles.remoteContainer}>
+              {remoteStream ? (
+                <RTCView
+                  objectFit={'cover'}
+                  style={{
+                    flex: 1,
+                  }}
+                  streamURL={remoteStream.toURL()}
+                />
+              ) : null}
+            </View>
+            <View style={styles.localContainer}>
+              {remoteStream && localStream ? (
+                <RTCView
+                  objectFit={'cover'}
+                  style={{
+                    flex: 1,
+                  }}
+                  streamURL={localStream.toURL()}
+                />
+              ) : null}
+            </View>
+          </View>
+          <View style={styles.bottomBtnContainer}>
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                // leave();
+              }}>
+              <Image source={images.audioOn} style={styles.btnImage} />
+            </TouchableOpacity>
 
-  // const JoinScreen = () => {
-  //   return (
-  //     <KeyboardAvoidingView
-  //       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-  //       style={{
-  //         flex: 1,
-  //         backgroundColor: '#050A0E',
-  //         justifyContent: 'center',
-  //         paddingHorizontal: 42,
-  //       }}>
-  //       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-  //         <>
-  //           <View
-  //             style={{
-  //               padding: 35,
-  //               backgroundColor: '#1A1C22',
-  //               justifyContent: 'center',
-  //               alignItems: 'center',
-  //               borderRadius: 14,
-  //             }}>
-  //             <Text
-  //               style={{
-  //                 fontSize: 18,
-  //                 color: '#D0D4DD',
-  //               }}>
-  //               Your Caller ID
-  //             </Text>
-  //             <View
-  //               style={{
-  //                 flexDirection: 'row',
-  //                 marginTop: 12,
-  //                 alignItems: 'center',
-  //               }}>
-  //               <Text
-  //                 style={{
-  //                   fontSize: 32,
-  //                   color: '#ffff',
-  //                   letterSpacing: 6,
-  //                 }}>
-  //                 {callerId}
-  //               </Text>
-  //             </View>
-  //           </View>
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                toggleCamera();
+              }}>
+              <Image
+                source={localWebcamOn ? images.videoOn : images.videoOff}
+                style={styles.btnImage}
+              />
+            </TouchableOpacity>
 
-  //           <View
-  //             style={{
-  //               backgroundColor: '#1A1C22',
-  //               padding: 40,
-  //               marginTop: 25,
-  //               justifyContent: 'center',
-  //               borderRadius: 14,
-  //             }}>
-  //             <Text
-  //               style={{
-  //                 fontSize: 18,
-  //                 color: '#D0D4DD',
-  //               }}>
-  //               Enter call id of another user
-  //             </Text>
-  //             <TextInputContainer
-  //               placeholder={'Enter Caller ID'}
-  //               value={otherUserId.current}
-  //               setValue={(text: string) => {
-  //                 otherUserId.current = text;
-  //               }}
-  //             />
-  //             <TouchableOpacity
-  //               onPress={() => {
-  //                 processCall();
-  //                 setType(constants.outgoingCall);
-  //               }}
-  //               style={{
-  //                 height: 50,
-  //                 backgroundColor: '#5568FE',
-  //                 justifyContent: 'center',
-  //                 alignItems: 'center',
-  //                 borderRadius: 12,
-  //                 marginTop: 16,
-  //               }}>
-  //               <Text
-  //                 style={{
-  //                   fontSize: 16,
-  //                   color: '#FFFFFF',
-  //                 }}>
-  //                 Call Now
-  //               </Text>
-  //             </TouchableOpacity>
-  //           </View>
-  //         </>
-  //       </TouchableWithoutFeedback>
-  //     </KeyboardAvoidingView>
-  //   );
-  // };
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                toggleMic();
+              }}>
+              <Image
+                source={localMicOn ? images.micOn : images.micOff}
+                style={styles.btnImage}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                switchCamera();
+              }}>
+              <Image source={images.switchCamera} style={styles.btnImage} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                leave();
+              }}>
+              <Image source={images.decline} style={styles.btnImage} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <SafeAreaView />
+      </View>
+    );
+  };
 
   const OutgoingCallScreen = () => {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'space-around',
-          backgroundColor: '#050A0E',
-        }}>
-        <View
-          style={{
-            padding: 35,
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderRadius: 14,
-          }}>
-          <Text
-            style={{
-              fontSize: 16,
-              color: '#D0D4DD',
-            }}>
-            Calling to...
-          </Text>
+      <View style={styles.callingContainer}>
+        <SafeAreaView />
+        <View style={styles.headerContainer}>
+          <Text style={styles.callTitle}>Calling to {username}...</Text>
+        </View>
+        <View style={styles.container}>
+          <View style={styles.callViewContainer}>
+            {localStream ? (
+              <View style={styles.remoteContainer}>
+                <RTCView
+                  objectFit={'cover'}
+                  style={{
+                    flex: 1,
+                    borderRadius: 10,
+                  }}
+                  streamURL={localStream.toURL()}
+                />
+              </View>
+            ) : null}
+          </View>
+          <View style={styles.bottomBtnContainer}>
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                // leave();
+              }}>
+              <Image source={images.audioOn} style={styles.btnImage} />
+            </TouchableOpacity>
 
-          <Text
-            style={{
-              fontSize: 36,
-              marginTop: 12,
-              color: '#ffff',
-              letterSpacing: 6,
-            }}>
-            {otherUserId.current}
-          </Text>
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                toggleCamera();
+              }}>
+              <Image
+                source={localWebcamOn ? images.videoOn : images.videoOff}
+                style={styles.btnImage}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                toggleMic();
+              }}>
+              <Image
+                source={localMicOn ? images.micOn : images.micOff}
+                style={styles.btnImage}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                switchCamera();
+              }}>
+              <Image source={images.switchCamera} style={styles.btnImage} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                leave();
+              }}>
+              <Image source={images.decline} style={styles.btnImage} />
+            </TouchableOpacity>
+          </View>
         </View>
-        <View
-          style={{
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-          <TouchableOpacity
-            onPress={() => {
-              navigationRef.current?.goBack();
-              otherUserId.current = null;
-            }}
-            style={{
-              backgroundColor: '#FF5D5D',
-              borderRadius: 30,
-              height: 60,
-              aspectRatio: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>End call</Text>
-          </TouchableOpacity>
-        </View>
+        <SafeAreaView />
       </View>
     );
   };
 
   const IncomingCallScreen = () => {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'space-around',
-          backgroundColor: '#050A0E',
-        }}>
-        <View
-          style={{
-            padding: 35,
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderRadius: 14,
-          }}>
-          <Text
-            style={{
-              fontSize: 36,
-              marginTop: 12,
-              color: '#ffff',
-            }}>
-            {otherUserId.current} is calling..
-          </Text>
-        </View>
-        <View
-          style={{
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
+      <View style={styles.callingContainer}>
+        <SafeAreaView />
+        <ImageBackground
+          style={styles.incommingCallContainer}
+          source={images.user}>
+          <View style={styles.incommingCallInner}>
+            <Image style={styles.incommingCallUserImage} source={images.user} />
+            <Text
+              style={{
+                fontSize: 36,
+                marginTop: 12,
+                color: colors.white,
+              }}>
+              {username} is calling...
+            </Text>
+          </View>
+        </ImageBackground>
+        <View style={styles.responseIcons}>
+          <TouchableOpacity
+            onPress={() => {
+              leave();
+            }}
+            style={[styles.callAnswerBtnContainer, {backgroundColor: 'red'}]}>
+            <Image source={images.videoOn} style={styles.callPickIcon} />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
               processAccept();
+              InCallManager.stopRingtone();
               setType(constants.webRTC);
             }}
-            style={{
-              backgroundColor: 'green',
-              borderRadius: 30,
-              height: 60,
-              aspectRatio: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>Answer call</Text>
+            style={[styles.callAnswerBtnContainer, {backgroundColor: 'green'}]}>
+            <Image source={images.videoOn} style={styles.callPickIcon} />
           </TouchableOpacity>
         </View>
+        <SafeAreaView />
       </View>
     );
   };
