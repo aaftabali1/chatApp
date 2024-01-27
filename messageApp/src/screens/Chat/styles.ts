@@ -3,7 +3,7 @@ import colors from '../../utils/colors';
 
 export default StyleSheet.create({
   chatscreen: {
-    backgroundColor: '#F7F7F7',
+    backgroundColor: colors.bgColor,
     flex: 1,
     padding: 10,
     position: 'relative',
@@ -14,7 +14,7 @@ export default StyleSheet.create({
     color: 'green',
   },
   chattopContainer: {
-    backgroundColor: '#F7F7F7',
+    backgroundColor: colors.bgColor,
     height: 70,
     width: '100%',
     padding: 20,
@@ -87,5 +87,10 @@ export default StyleSheet.create({
   editImage: {
     width: 25,
     height: 25,
+  },
+  rowContainer: {
+    flex: 1,
+    backgroundColor: 'red',
+    padding: 0,
   },
 });

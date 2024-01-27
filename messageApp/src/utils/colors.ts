@@ -9,4 +9,5 @@ export default {
   primaryBlue: '#2A23C0',
   black: '#000000',
   bottomNavColor: 'rgba(42, 35, 192, 0.10)',
+  bgColor: '#F7F7F7',
 };

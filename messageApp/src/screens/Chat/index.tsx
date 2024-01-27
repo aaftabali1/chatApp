@@ -17,6 +17,7 @@ import constants from '../../utils/constants';
 import images from '../../utils/images';
 import socket from '../../utils/socket';
 import styles from './styles';
+import {SwipeListView} from 'react-native-swipe-list-view';
 
 const Chat = () => {
   const {t} = useTranslation();
@@ -127,10 +128,21 @@ const Chat = () => {
 
       <View style={styles.chatlistContainer}>
         {messages.length > 0 ? (
-          <FlatList
+          <SwipeListView
             data={messages}
             renderItem={({item}) => <ChatComponent item={item} />}
             keyExtractor={(item: any) => item?.id}
+            renderHiddenItem={(data, rowMap) => {
+              return (
+                <View style={styles.rowContainer}>
+                  <Text>Left</Text>
+                  <Text>Right</Text>
+                </View>
+              );
+            }}
+            // leftOpenValue={75}
+            disableRightSwipe
+            rightOpenValue={-225}
           />
         ) : (
           <View style={styles.chatemptyContainer}>
