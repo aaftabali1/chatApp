@@ -10,4 +10,7 @@ export default {
   black: '#000000',
   bottomNavColor: 'rgba(42, 35, 192, 0.10)',
   bgColor: '#F7F7F7',
+  pinYellow: '#FAD219',
+  blueTransparent: 'rgba(42,35,192,0.1)',
+  offWhite: '#F4F4F9',
 };

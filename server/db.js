@@ -57,7 +57,6 @@ class db {
           resolve(results);
         });
       });
-      console.log(response);
       return response;
     } catch (error) {
       console.log(error);
@@ -66,9 +65,10 @@ class db {
 
   async getUserMessages({ chatId, offset }) {
     try {
+      const page = offset * 20;
       const response = await new Promise((resolve, reject) => {
-        const query = `SELECT * FROM ${messagesTable} WHERE chatId = ? ORDER BY id DESC LIMIT 20 OFFSET ${offset}`;
-        connection.query(query, [chatId], (err, results) => {
+        const query = `SELECT * FROM ${messagesTable} WHERE chatId = ? ORDER BY id DESC LIMIT 20 OFFSET ?`;
+        connection.query(query, [chatId, page], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);
         });
@@ -156,7 +156,7 @@ class db {
         const query =
           "INSERT INTO " +
           messagesTable +
-          " (`message`, `read`, `chatId`, `senderId`, `receiverId`, `time`) VALUES (?,?,?,?,?,?)";
+          " (`message`, `seen`, `chatId`, `senderId`, `receiverId`, `time`) VALUES (?,?,?,?,?,?)";
 
         connection.query(
           query,
@@ -219,7 +219,60 @@ class db {
           resolve(results);
         });
       });
-      console.log(response);
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getUnreadMessages({ chatId, senderId, receiverId }) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = `SELECT * FROM ${messagesTable} WHERE chatId = ? AND seen=0 AND receiverId = ?`;
+        connection.query(query, [chatId, receiverId], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getAllMessagesByUsername({ sender, receiver }) {
+    try {
+      const chats = await this.getUserChats({ sender, receiver });
+
+      for (let i = 0; i < chats.length; i++) {
+        const unreadMessages = await this.getUnreadMessages({
+          chatId: chats[i].id,
+          senderId: sender,
+          receiverId: receiver,
+        });
+        const messages = await this.getUserMessages({
+          chatId: chats[i].id,
+          offset: 0,
+        });
+        chats[i].messages = messages;
+        chats[i].unreadCount = unreadMessages.length;
+      }
+
+      return chats;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async markChatRead({ chatId, senderId }) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = `UPDATE ${messagesTable} SET seen = 1 WHERE chatId = ? AND senderId = ?`;
+        connection.query(query, [chatId, senderId], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
       return response;
     } catch (error) {
       console.log(error);

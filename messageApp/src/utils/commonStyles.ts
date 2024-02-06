@@ -1,5 +1,7 @@
 import {StyleSheet} from 'react-native';
 import colors from './colors';
+import {moderateScale} from './commonnFunctions';
+import fonts from './fonts';
 
 export const styles = StyleSheet.create({
   loginscreen: {
@@ -176,11 +178,12 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 5,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.textColor,
   },
   cmessage: {
     fontSize: 14,
     opacity: 0.7,
+    color: colors.textColor,
   },
   crightContainer: {
     flexDirection: 'row',
@@ -194,5 +197,96 @@ export const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
+  },
+});
+
+export const globalStyles = StyleSheet.create({
+  shadow: {
+    shadowColor: '#333',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 10,
+    backgroundColor: 'grey',
+  },
+  flexRow: {flexDirection: 'row'},
+  flexOne: {flex: 1},
+  heading14: {
+    fontFamily: fonts.bold,
+    fontSize: moderateScale(14),
+    color: colors.textColor,
+  },
+  heading16: {
+    fontFamily: fonts.bold,
+    fontSize: moderateScale(16),
+    color: colors.textColor,
+  },
+  lightText14: {
+    fontFamily: fonts.light,
+    color: colors.textColor,
+    fontSize: moderateScale(14),
+  },
+  lightText16: {
+    fontFamily: fonts.light,
+    color: colors.textColor,
+    fontSize: moderateScale(16),
+  },
+  regularText14: {
+    fontFamily: fonts.regular,
+    color: colors.textColor,
+    fontSize: moderateScale(14),
+  },
+  regularText16: {
+    fontFamily: fonts.regular,
+    color: colors.textColor,
+    fontSize: moderateScale(16),
+  },
+  heading14Italic: {
+    fontFamily: fonts.boldItalic,
+    fontSize: moderateScale(14),
+    color: colors.textColor,
+  },
+  heading16Italic: {
+    fontFamily: fonts.boldItalic,
+    fontSize: moderateScale(16),
+    color: colors.textColor,
+  },
+  lightText14Italic: {
+    fontFamily: fonts.lightItalic,
+    color: colors.textColor,
+    fontSize: moderateScale(14),
+  },
+  lightText16Italic: {
+    fontFamily: fonts.lightItalic,
+    color: colors.textColor,
+    fontSize: moderateScale(16),
+  },
+  regularText14Italic: {
+    fontFamily: fonts.italic,
+    color: colors.textColor,
+    fontSize: moderateScale(14),
+  },
+  regularText16Italic: {
+    fontFamily: fonts.italic,
+    color: colors.textColor,
+    fontSize: moderateScale(16),
+  },
+  mediumText14: {
+    fontFamily: fonts.medium,
+    color: colors.textColor,
+    fontSize: moderateScale(14),
+  },
+  mediumText16: {
+    fontFamily: fonts.medium,
+    color: colors.textColor,
+    fontSize: moderateScale(16),
   },
 });

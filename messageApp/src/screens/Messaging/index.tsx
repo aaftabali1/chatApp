@@ -1,4 +1,10 @@
-import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   TextInput,
@@ -11,7 +17,6 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import MessageComponent from '../../components/MessageComponent';
 import styles from './styles';
 import socket from '../../utils/socket';
@@ -19,73 +24,77 @@ import {useTranslation} from 'react-i18next';
 import {useNavigation} from '@react-navigation/native';
 import images from '../../utils/images';
 import constants from '../../utils/constants';
+import {useSelector} from 'react-redux';
+import {selectUsername} from '../../redux/slices/authSlice';
 
 const Messaging = ({route}: any) => {
   const {t} = useTranslation();
+  const username = useSelector(selectUsername);
   const navigation = useNavigation();
+  const flatListRef = useRef<any>();
 
-  const {item, user: name} = route.params;
+  const {item, receiver} = route.params;
 
   const id = item.id;
 
-  const [chatMessages, setChatMessages] = useState([]);
+  const [chatMessages, setChatMessages] = useState<any>([]);
   const [message, setMessage] = useState('');
-  const [user, setUser] = useState('');
   const [offset, setOffset] = useState(0);
-  const flatListRef = useRef<any>(null);
-
-  //👇🏻 This function gets the username saved on AsyncStorage
-  const getUsername = async () => {
-    try {
-      const value = await AsyncStorage.getItem('username');
-      if (value !== null) {
-        setUser(value);
-      }
-    } catch (e) {
-      console.error('Error while loading username!');
-    }
-  };
-
-  //👇🏻 Sets the header title to the name chatroom's name
-  useLayoutEffect(() => {
-    navigation.setOptions({title: name});
-    getUsername();
-  }, []);
+  const [showDownArrow, setShowDownArrow] = useState(false);
 
   useLayoutEffect(() => {
-    navigation.setOptions({title: name});
-    // socket.emit('findUser', {
-    //   id,
-    //   receiver: item.receiverId,
-    //   sender: item.senderId,
-    // });
-    // socket.on('foundUser', roomChats => {
-    //   setTimeout(() => {
-    //     flatListRef.current?.scrollToEnd({animated: true});
-    //   }, 500);
-    //   setChatMessages(roomChats);
-    // });
+    navigation.setOptions({title: receiver});
   }, []);
 
-  useEffect(() => {
+  const findUserCallback = useCallback(
+    (roomChats: any) => {
+      setChatMessages((prevData: any) => [...prevData, ...roomChats]);
+    },
+    [socket],
+  );
+
+  const getNewMessageCallback = useCallback(
+    (chats: any) => {
+      setChatMessages(chats);
+    },
+    [socket],
+  );
+
+  const fetchMessages = () => {
     socket.emit('findUser', {
       id,
       receiver: item.receiverId,
       sender: item.senderId,
       offset,
     });
-    socket.on('foundUser', roomChats => {
-      setChatMessages(roomChats);
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({animated: true});
-      }, 500);
+  };
+
+  useEffect(() => {
+    fetchMessages();
+  }, [offset]);
+
+  const markMessagesRead = () => {
+    socket.emit('messageRead', {
+      chatId: id,
+      senderId: username,
+      receiverId: item.receiverId == username ? item.senderId : item.receiverId,
     });
+  };
+
+  useEffect(() => {
+    markMessagesRead();
   }, []);
 
-  /*👇🏻 
-        This function gets the time the user sends a message, then 
-        logs the username, message, and the timestamp to the console.
-     */
+  useEffect(() => {
+    socket.on('foundUser', findUserCallback);
+    socket.on('getNewMessage', getNewMessageCallback);
+
+    return () => {
+      socket.off('foundUser', findUserCallback);
+      socket.off('getNewMessage', getNewMessageCallback);
+    };
+  }, [findUserCallback, socket, getNewMessageCallback]);
+
   const handleNewMessage = () => {
     const hour =
       new Date().getHours() < 10
@@ -100,10 +109,10 @@ const Messaging = ({route}: any) => {
     const messageObject = {
       message,
       chat_id: id,
-      sender: item.senderId == user ? item.receiverId : item.senderId,
-      receiver: user,
+      receiver: receiver,
+      sender: username,
       timestamp: {hour, mins},
-      offset,
+      offset: 0,
     };
 
     socket.emit('newChatMessage', messageObject);
@@ -120,15 +129,15 @@ const Messaging = ({route}: any) => {
         <View style={styles.profileContainer}>
           <Image source={images.user} style={styles.profileImage} />
           <View style={styles.userDetailsContainer}>
-            <Text style={styles.userFullName}>{name}</Text>
+            <Text style={styles.userFullName}>{receiver}</Text>
             <Text style={styles.goToProfile}>{t('profile')}</Text>
           </View>
           <TouchableOpacity
             onPress={() => {
               navigation.navigate('IncomingVideoCall', {
-                username: name,
+                username: receiver,
                 callType: constants.outgoingCall,
-                currentUser: user,
+                currentUser: username,
                 callId: 0,
               });
             }}>
@@ -137,9 +146,9 @@ const Messaging = ({route}: any) => {
           <TouchableOpacity
             onPress={() => {
               navigation.navigate('IncomingVoiceCall', {
-                username: name,
+                username: receiver,
                 callType: constants.outgoingCall,
-                currentUser: user,
+                currentUser: username,
               });
             }}>
             <Image source={images.phoneCall} style={styles.voiceCallImage} />
@@ -147,6 +156,17 @@ const Messaging = ({route}: any) => {
         </View>
       </View>
     );
+  };
+
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setShowDownArrow(offsetY > 0);
+  };
+
+  const scrollToTop = () => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({offset: 0, animated: true});
+    }
   };
 
   return (
@@ -161,15 +181,27 @@ const Messaging = ({route}: any) => {
         ]}>
         {userProfile()}
         <FlatList
-          // ref={flatListRef}
+          onEndReached={() => {
+            setOffset(prevOffset => prevOffset + 1);
+          }}
+          ref={flatListRef}
+          onEndReachedThreshold={0.2}
           data={chatMessages?.length > 0 ? chatMessages : []}
           inverted
+          onScroll={handleScroll}
           showsVerticalScrollIndicator={false}
-          renderItem={({item}) => <MessageComponent item={item} user={user} />}
-          keyExtractor={(item: any) => item.id}
+          renderItem={({item}) => (
+            <MessageComponent item={item} user={username} />
+          )}
+          keyExtractor={(item: any, i: number) => `${i}-${item.id}`}
         />
       </View>
 
+      {showDownArrow && (
+        <TouchableOpacity style={styles.downArrow} onPress={scrollToTop}>
+          <Text style={styles.downArrowImg}>▼</Text>
+        </TouchableOpacity>
+      )}
       <SafeAreaView style={styles.messaginginputContainer}>
         <View style={styles.messaginginputContainerInner}>
           <Image source={images.user} style={styles.avtar} />

@@ -1,7 +1,7 @@
 {
   "messaging": "Messaging",
   "search": "Search",
-  "myDiscussions": "My discussions",
+  "myDiscussions": "My Conversations",
   "messages": "Messages",
   "calls": "Calls",
   "settings": "Settings",
@@ -10,5 +10,22 @@
   "profile": "Profile",
   "contacts": "Contacts",
   "noContactsToShow": "No contacts to show",
-  "language": "Language"
+  "language": "Language",
+  "noMessages": "No messages!",
+  "pinnedConversations": "Pinned Conversations",
+  "filters": "Filtres",
+  "apply": "Apply",
+  "all": "All",
+  "archivedMessages": "Archived Messages",
+  "unreadMessages": "Unread Messages",
+  "mutedMessages": "Muted Messages",
+  "merchantMessages": "Merchant Messages",
+  "contactMessages": "Contact Messages",
+  "chatOptions": "Chat Options",
+  "pinConversation": "Pin Conversation",
+  "activeSecretMode": "Activate Secret Conversation Mode",
+  "markUnread": "Mark as Unread",
+  "accessContactDetails": "Access Contact Details",
+  "deleteAllMessage": "Delete All Messages",
+  "deleteConversation": "Delete Conversation"
 }

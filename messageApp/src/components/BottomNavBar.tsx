@@ -44,9 +44,9 @@ const BottomNavBar = ({state, descriptors, navigation}: any) => {
         let image;
 
         if (label === 'messages') {
-          image = images.message;
+          image = isFocused ? images.message : images.messageUnselected;
         } else if (label === 'calls') {
-          image = images.phone;
+          image = isFocused ? images.phoneCall : images.phone;
         } else if (label === 'settings') {
           image = images.user;
         } else if (label === 'contacts') {

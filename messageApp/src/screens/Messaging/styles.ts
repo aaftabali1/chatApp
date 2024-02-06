@@ -86,4 +86,17 @@ export default StyleSheet.create({
     resizeMode: 'contain',
     marginStart: 20,
   },
+  downArrow: {
+    backgroundColor: colors.primaryBlue,
+    position: 'absolute',
+    right: 10,
+    bottom: 100,
+    zIndex: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 13,
+    borderRadius: 220,
+  },
+  downArrowImg: {
+    color: colors.white,
+  },
 });

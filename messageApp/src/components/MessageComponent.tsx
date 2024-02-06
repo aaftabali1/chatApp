@@ -1,6 +1,6 @@
 import {View, Text, Image} from 'react-native';
 import React from 'react';
-import {styles} from '../utils/styles';
+import {styles} from '../utils/commonStyles';
 
 export default function MessageComponent({item, user}: any) {
   const status = item.senderId !== user;

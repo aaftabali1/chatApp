@@ -1,5 +1,11 @@
 import {StyleSheet} from 'react-native';
 import colors from '../../utils/colors';
+import {
+  horizontalScale,
+  moderateScale,
+  verticalScale,
+} from '../../utils/commonnFunctions';
+import {globalStyles} from '../../utils/commonStyles';
 
 export default StyleSheet.create({
   chatscreen: {
@@ -88,9 +94,85 @@ export default StyleSheet.create({
     width: 25,
     height: 25,
   },
-  rowContainer: {
+  leftHiddenItems: {
     flex: 1,
-    backgroundColor: 'red',
     padding: 0,
+  },
+  rightFirstItem: {
+    position: 'absolute',
+    right: 0,
+    width: 60,
+    backgroundColor: colors.orange,
+    bottom: 0,
+    top: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trashImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
+  rightSecondItem: {
+    position: 'absolute',
+    right: 60,
+    width: 60,
+    backgroundColor: colors.primary,
+    bottom: 0,
+    top: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  archiveImage: {
+    width: 25,
+    height: 25,
+    resizeMode: 'contain',
+  },
+  rightThirdItem: {
+    position: 'absolute',
+    right: 120,
+    width: 60,
+    backgroundColor: colors.pinYellow,
+    bottom: 0,
+    top: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pinnedOuter: {
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: colors.blueTransparent,
+    marginHorizontal: 20,
+    marginTop: 20,
+  },
+  profileImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+    borderRadius: 200,
+  },
+  pinnedItemOuter: {
+    marginTop: verticalScale(10),
+    marginEnd: horizontalScale(15),
+    alignItems: 'center',
+  },
+  pinnedUsername: {
+    maxWidth: 60,
+    marginTop: 5,
+    ...globalStyles.lightText14,
+  },
+  removePin: {
+    backgroundColor: colors.textColor,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    borderRadius: 100,
+    position: 'absolute',
+    right: 5,
+    zIndex: 5,
+    top: 0,
+  },
+  closeText: {
+    color: colors.white,
+    fontSize: moderateScale(8),
   },
 });

@@ -1,6 +1,6 @@
 import {View, Text, TextInput, Pressable} from 'react-native';
 import React, {useState} from 'react';
-import {styles} from '../utils/styles';
+import {styles} from '../utils/commonStyles';
 
 import socket from '../utils/socket';
 

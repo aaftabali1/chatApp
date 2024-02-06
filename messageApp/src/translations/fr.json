@@ -10,5 +10,22 @@
   "profile": "Profil",
   "contacts": "Contacts",
   "noContactsToShow": "Aucun contact à afficher",
-  "language": "Langue"
+  "language": "Langue",
+  "noMessages": "Aucun message !",
+  "pinnedConversations": "Discussions épinglées",
+  "filters": "Filtres",
+  "apply": "Appliquer",
+  "all": "Tous",
+  "archivedMessages": "Messages archivés",
+  "unreadMessages": "Messages non lus",
+  "mutedMessages": "Messages en sourdine",
+  "merchantMessages": "Messages commerçants",
+  "contactMessages": "Messages contacts",
+  "chatOptions": "Options de discussion",
+  "pinConversation": "Épingler la discussion",
+  "activeSecretMode": "Activer le mode conversation secrète",
+  "markUnread": "Marquer comme non lu",
+  "accessContactDetails": "Marquer comme non lu",
+  "deleteAllMessage": "Effacer tous les messages",
+  "deleteConversation": "Supprimer la discussion"
 }

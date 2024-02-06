@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 //👇🏻 Import the app styles
-import {styles} from '../../utils/styles';
+import {styles} from '../../utils/commonStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
