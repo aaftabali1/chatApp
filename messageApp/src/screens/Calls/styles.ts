@@ -1,5 +1,11 @@
 import {StyleSheet} from 'react-native';
 import colors from '../../utils/colors';
+import {globalStyles} from '../../utils/commonStyles';
+import {
+  horizontalScale,
+  moderateScale,
+  verticalScale,
+} from '../../utils/commonnFunctions';
 
 export default StyleSheet.create({
   chatscreen: {
@@ -119,5 +125,59 @@ export default StyleSheet.create({
     fontStyle: 'italic',
     fontSize: 13,
     color: 'red',
+  },
+  topTabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.blueLight,
+    padding: 2,
+  },
+  tabs: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  selectedTab: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    margin: 1,
+  },
+  tabText: {
+    ...globalStyles.regularText16,
+  },
+  initiateCallContainer: {
+    ...globalStyles.whiteRoundContainer,
+    marginTop: verticalScale(20),
+    paddingVertical: 0,
+  },
+  newCallContainer: {
+    flexDirection: 'row',
+    paddingVertical: verticalScale(14),
+    alignItems: 'center',
+  },
+  newCallIcon: {
+    width: moderateScale(20),
+    height: moderateScale(20),
+    resizeMode: 'contain',
+    marginStart: horizontalScale(3),
+    marginEnd: horizontalScale(36),
+  },
+  newCallText: {
+    flex: 1,
+    ...globalStyles.lightText14,
+  },
+  nextArrow: {
+    width: moderateScale(16),
+    height: moderateScale(16),
+    resizeMode: 'contain',
+  },
+  divider: {
+    ...globalStyles.divider,
+    marginVertical: 0,
+    backgroundColor: colors.offWhite,
   },
 });

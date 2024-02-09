@@ -10,9 +10,21 @@ import {globalStyles} from '../utils/commonStyles';
 const ChatAction = ({
   isVisible,
   hideActionMenu,
+  onPresspinUnpinChat,
+  onPressSecretChat,
+  onPressMarkRead,
+  onPressContactDetails,
+  onPressDeleteMessages,
+  onPressDeleteConversation,
 }: {
   isVisible: boolean;
   hideActionMenu: () => void;
+  onPresspinUnpinChat: () => void;
+  onPressSecretChat: () => void;
+  onPressMarkRead: () => void;
+  onPressContactDetails: () => void;
+  onPressDeleteMessages: () => void;
+  onPressDeleteConversation: () => void;
 }) => {
   const {t} = useTranslation();
 
@@ -27,27 +39,39 @@ const ChatAction = ({
           </TouchableOpacity>
         </View>
         <View style={styles.menuMainContainer}>
-          <TouchableOpacity style={styles.menuItemContainer}>
+          <TouchableOpacity
+            onPress={onPresspinUnpinChat}
+            style={styles.menuItemContainer}>
             <Image source={images.pin} style={styles.pinImage} />
             <Text style={styles.menuItemText}>{t('pinConversation')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItemContainer}>
+          <TouchableOpacity
+            onPress={onPressSecretChat}
+            style={styles.menuItemContainer}>
             <Image source={images.lockChat} style={styles.pinImage} />
             <Text style={styles.menuItemText}>{t('activeSecretMode')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItemContainer}>
+          <TouchableOpacity
+            onPress={onPressMarkRead}
+            style={styles.menuItemContainer}>
             <Image source={images.unreadMessages} style={styles.pinImage} />
             <Text style={styles.menuItemText}>{t('markUnread')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItemContainer}>
+          <TouchableOpacity
+            onPress={onPressContactDetails}
+            style={styles.menuItemContainer}>
             <Image source={images.account} style={styles.pinImage} />
             <Text style={styles.menuItemText}>{t('accessContactDetails')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItemContainer}>
+          <TouchableOpacity
+            onPress={onPressDeleteMessages}
+            style={styles.menuItemContainer}>
             <Image source={images.eraser} style={styles.pinImage} />
             <Text style={styles.menuItemText}>{t('deleteAllMessage')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItemContainer}>
+          <TouchableOpacity
+            onPress={onPressDeleteConversation}
+            style={styles.menuItemContainer}>
             <Image
               source={images.trash}
               style={[styles.pinImage, {tintColor: colors.textColor}]}

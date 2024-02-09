@@ -1,6 +1,7 @@
 const express = require("express");
-const url = require("url");
-const database = require("./db");
+const database = require("./config/db");
+const userRoutes = require("./routes/userRoutes");
+const chatRoutes = require("./routes/chatRoute");
 const app = express();
 const PORT = 4000;
 
@@ -12,10 +13,14 @@ const cors = require("cors");
 
 app.use(cors());
 
+//Routes
+app.use("/users", userRoutes);
+app.use("/chats", chatRoutes);
+
+const db = database.getDbServiceInstance();
+
 app.get("/api/chats", async (req, res) => {
   try {
-    const db = database.getDbServiceInstance();
-
     const chats = await db.getAllMessagesByUsername({
       sender: req.query.username,
       receiver: req.query.username,
@@ -30,7 +35,6 @@ app.get("/api/chats", async (req, res) => {
 
 app.get("/api/calls", async (req, res) => {
   try {
-    const db = database.getDbServiceInstance();
     const calls = await db.getCalls({
       callerId: req.query.username,
     });
@@ -44,8 +48,6 @@ app.get("/api/calls", async (req, res) => {
 app.post("/register", async (req, res) => {
   try {
     const { username } = req.body;
-
-    const db = database.getDbServiceInstance();
 
     const userFound = await db.getUser({ username });
 
@@ -93,8 +95,6 @@ socketIO.on("connection", (socket) => {
   console.log(`⚡: ${socket.id} user just connected! `);
 
   socket.on("call", async (data) => {
-    const db = database.getDbServiceInstance();
-
     const { calleeId, callerId, callId, rtcMessage } = data;
 
     const fetchUser = await db.getUser({ username: calleeId });
@@ -122,8 +122,6 @@ socketIO.on("connection", (socket) => {
   });
 
   socket.on("audioCall", async (data) => {
-    const db = database.getDbServiceInstance();
-
     const { calleeId, callerId } = data;
 
     const fetchUser = await db.getUser({ username: calleeId });
@@ -147,8 +145,6 @@ socketIO.on("connection", (socket) => {
   socket.on("answerCall", async (data) => {
     const { callerId, calleeId, rtcMessage, callId } = data;
 
-    const db = database.getDbServiceInstance();
-
     await db.updateCall({ callId, status: "1" });
 
     const fetchUser = await db.getUser({ username: calleeId });
@@ -163,8 +159,6 @@ socketIO.on("connection", (socket) => {
   socket.on("answerAudioCall", async (data) => {
     const { callerId, calleeId, rtcMessage, callId } = data;
 
-    const db = database.getDbServiceInstance();
-
     await db.updateCall({ callId, status: "1" });
 
     const fetchUser = await db.getUser({ username: calleeId });
@@ -177,8 +171,6 @@ socketIO.on("connection", (socket) => {
   });
 
   socket.on("ICEcandidate", async (data) => {
-    const db = database.getDbServiceInstance();
-
     const { calleeId, callerId, rtcMessage } = data;
 
     const fetchUser = await db.getUser({ username: calleeId });
@@ -193,16 +185,12 @@ socketIO.on("connection", (socket) => {
   socket.on("endCall", async (data) => {
     const { callerId, calleeId } = data;
 
-    const db = database.getDbServiceInstance();
-
     const fetchUserCaller = await db.getUser({ username: callerId });
 
     socket.to(fetchUserCaller[0].socket).emit("callEnd", {});
   });
 
   socket.on("peer:nego:needed", async ({ to, offer }) => {
-    const db = database.getDbServiceInstance();
-
     const fetchUser = await db.getUser({ username: to });
 
     socket
@@ -215,12 +203,10 @@ socketIO.on("connection", (socket) => {
   });
 
   socket.on("updateUser", async (username) => {
-    const db = database.getDbServiceInstance();
     await db.updateUser({ socket: socket.id, username });
   });
 
   socket.on("addUser", async ({ senderId, receiverId }) => {
-    const db = database.getDbServiceInstance();
     await db.createChat({ sender: senderId, receiver: receiverId });
 
     socket.join(receiverId);
@@ -244,8 +230,6 @@ socketIO.on("connection", (socket) => {
   });
 
   socket.on("getMessages", async (username) => {
-    const db = database.getDbServiceInstance();
-
     const chats = await db.getAllMessagesByUsername({
       sender: username,
       receiver: username,
@@ -260,14 +244,10 @@ socketIO.on("connection", (socket) => {
   });
 
   socket.on("messageRead", async ({ chatId, senderId, receiverId }) => {
-    const db = database.getDbServiceInstance();
-
-    await db.markChatRead({ chatId, senderId });
+    await db.markChatRead({ chatId, senderId, receiverId });
   });
 
   socket.on("findUser", async ({ id, receiver, sender, offset }) => {
-    const db = database.getDbServiceInstance();
-
     const receiverData = await db.getUser({ username: receiver });
     const senderData = await db.getUser({ username: sender });
     const allMessages = await db.getUserMessages({ chatId: id, offset });
@@ -284,7 +264,6 @@ socketIO.on("connection", (socket) => {
 
   socket.on("newChatMessage", async (data) => {
     try {
-      const db = database.getDbServiceInstance();
       const { chat_id, message, sender, receiver, offset } = data;
 
       await db.insertMessage({

@@ -1,6 +1,10 @@
 import {StyleSheet} from 'react-native';
 import colors from './colors';
-import {moderateScale} from './commonnFunctions';
+import {
+  horizontalScale,
+  moderateScale,
+  verticalScale,
+} from './commonnFunctions';
 import fonts from './fonts';
 
 export const styles = StyleSheet.create({
@@ -288,5 +292,61 @@ export const globalStyles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: colors.textColor,
     fontSize: moderateScale(16),
+  },
+  submitBtnText: {
+    fontSize: moderateScale(16),
+    width: '100%',
+    textAlign: 'center',
+    fontFamily: fonts.regular,
+    color: colors.offWhite,
+  },
+  submitBtnText3: {
+    fontSize: moderateScale(16),
+    width: '100%',
+    textAlign: 'center',
+    fontFamily: fonts.regular,
+    color: colors.textColor,
+  },
+  whiteRoundContainer: {
+    backgroundColor: colors.white,
+    borderRadius: moderateScale(20),
+    paddingHorizontal: horizontalScale(20),
+    paddingVertical: verticalScale(10),
+  },
+  submitBtnContainerZeroMargin: {
+    width: '90%',
+    borderRadius: moderateScale(30),
+    alignSelf: 'center',
+    marginTop: verticalScale(5),
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    backgroundColor: colors.orange,
+    shadowColor: '#333',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 3,
+    marginBottom: verticalScale(5),
+    borderWidth: 2,
+    borderColor: colors.orange,
+  },
+  submitBtnContainerWhiteZeroMargin: {
+    width: '90%',
+    borderRadius: moderateScale(30),
+    alignSelf: 'center',
+    marginTop: verticalScale(5),
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    backgroundColor: colors.white,
+    shadowColor: '#333',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 3,
+    marginBottom: verticalScale(5),
+    borderWidth: 2,
+    borderColor: colors.orange,
   },
 });

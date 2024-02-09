@@ -36,4 +36,8 @@ export default {
   unpin: require('../assets/images/unpin.png'),
   unlockChat: require('../assets/images/unlock-chat.png'),
   messageUnselected: require('../assets/images/message-unselected.png'),
+  tick: require('../assets/images/tick.png'),
+  note: require('../assets/images/note.png'),
+  group: require('../assets/images/group.png'),
+  chevronRight: require('../assets/images/chevron-right.png'),
 };

@@ -69,6 +69,7 @@ const Messaging = ({route}: any) => {
     });
   };
 
+  // fetching messages when user open screen
   useEffect(() => {
     fetchMessages();
   }, [offset]);
@@ -76,15 +77,17 @@ const Messaging = ({route}: any) => {
   const markMessagesRead = () => {
     socket.emit('messageRead', {
       chatId: id,
-      senderId: username,
-      receiverId: item.receiverId == username ? item.senderId : item.receiverId,
+      senderId: item.receiverId,
+      receiverId: username,
     });
   };
 
+  // marking message as read when user open screen
   useEffect(() => {
     markMessagesRead();
   }, []);
 
+  // handling socket response
   useEffect(() => {
     socket.on('foundUser', findUserCallback);
     socket.on('getNewMessage', getNewMessageCallback);
@@ -95,6 +98,7 @@ const Messaging = ({route}: any) => {
     };
   }, [findUserCallback, socket, getNewMessageCallback]);
 
+  //Sending new message
   const handleNewMessage = () => {
     const hour =
       new Date().getHours() < 10

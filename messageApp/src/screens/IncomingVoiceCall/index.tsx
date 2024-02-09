@@ -1,5 +1,5 @@
 import React, {useEffect, useState, useRef} from 'react';
-import {View, Text, TouchableOpacity, Image} from 'react-native';
+import {View, Text, TouchableOpacity, Image, SafeAreaView} from 'react-native';
 import {
   mediaDevices,
   RTCPeerConnection,
@@ -15,6 +15,7 @@ import images from '../../utils/images';
 import colors from '../../utils/colors';
 import {useNavigation} from '@react-navigation/native';
 import CustomHeader from '../../components/CustomHeader';
+import styles from './styles';
 
 const IncomingVoiceCall = ({route}: any) => {
   const navigation = useNavigation<any>();
@@ -390,58 +391,56 @@ const IncomingVoiceCall = ({route}: any) => {
 
   const OutgoingCallScreen = () => {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'space-around',
-          backgroundColor: '#050A0E',
-        }}>
-        <View
-          style={{
-            padding: 35,
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderRadius: 14,
-          }}>
-          <Text
-            style={{
-              fontSize: 16,
-              color: '#D0D4DD',
-            }}>
-            Calling to...
-          </Text>
+      <View style={styles.callingContainer}>
+        <SafeAreaView />
+        <View style={styles.headerContainer}>
+          <Text style={styles.callTitle}>Calling to {username}...</Text>
+        </View>
+        <View style={styles.container}>
+          <View style={styles.callViewContainer}>
+            <Image source={images.user} style={styles.callingUserImage} />
+          </View>
+          <View style={styles.bottomBtnContainer}>
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                // leave();
+              }}>
+              <Image source={images.audioOn} style={styles.btnImage} />
+            </TouchableOpacity>
 
-          <Text
-            style={{
-              fontSize: 36,
-              marginTop: 12,
-              color: '#ffff',
-              letterSpacing: 6,
-            }}>
-            {otherUserId.current}
-          </Text>
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                // toggleCamera();
+              }}>
+              <Image
+                source={localWebcamOn ? images.videoOn : images.videoOff}
+                style={styles.btnImage}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                // toggleMic();
+              }}>
+              <Image
+                source={localMicOn ? images.micOn : images.micOff}
+                style={styles.btnImage}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btnContainer}
+              onPress={() => {
+                // leave();
+              }}>
+              <Image source={images.decline} style={styles.btnImage} />
+            </TouchableOpacity>
+          </View>
         </View>
-        <View
-          style={{
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-          <TouchableOpacity
-            onPress={() => {
-              navigationRef.current?.goBack();
-              otherUserId.current = null;
-            }}
-            style={{
-              backgroundColor: '#FF5D5D',
-              borderRadius: 30,
-              height: 60,
-              aspectRatio: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-            <Text>End call</Text>
-          </TouchableOpacity>
-        </View>
+        <SafeAreaView />
       </View>
     );
   };

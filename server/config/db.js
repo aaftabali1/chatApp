@@ -4,6 +4,7 @@ const {
   messagesTable,
   usersTable,
   callsTable,
+  pinnedChats,
 } = require("./constants");
 
 let instance = null;
@@ -264,11 +265,31 @@ class db {
     }
   }
 
-  async markChatRead({ chatId, senderId }) {
+  async markChatRead({ chatId, senderId, receiverId }) {
     try {
       const response = await new Promise((resolve, reject) => {
-        const query = `UPDATE ${messagesTable} SET seen = 1 WHERE chatId = ? AND senderId = ?`;
-        connection.query(query, [chatId, senderId], (err, results) => {
+        const query = `UPDATE ${messagesTable} SET seen = 1 WHERE chatId = ? AND senderId = ? AND receiverId = ?`;
+        connection.query(
+          query,
+          [chatId, senderId, receiverId],
+          (err, results) => {
+            if (err) reject(new Error(err.message));
+            resolve(results);
+          }
+        );
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async pinChat({ chatId, userId }) {
+    try {
+      const time = new Date();
+      const response = await new Promise((resolve, reject) => {
+        const query = `INSERT INTO ${pinnedChats} (chatId, userId, time) VALUES (?,?,?)`;
+        connection.query(query, [chatId, userId, time], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);
         });

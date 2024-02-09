@@ -27,5 +27,20 @@
   "markUnread": "Marquer comme non lu",
   "accessContactDetails": "Marquer comme non lu",
   "deleteAllMessage": "Effacer tous les messages",
-  "deleteConversation": "Supprimer la discussion"
+  "deleteConversation": "Supprimer la discussion",
+  "messageSuccessfullyPinned": "Message épinglé avec succès",
+  "conversationSuccessfullyArchived": "Discussion archivée avec succès",
+  "archiveChatModalTitle": "Vous vous apprêtez à archiver la discussion avec {name}",
+  "archiveChatModalDescription": "La discussion restera accessible à partir de la section “Meessages archivés”",
+  "archiveConversation": "Archiver les discussions",
+  "cancel": "Annuler",
+  "deleteChatModalTitle": "Vous vous apprêtez à supprimer votre discussion avec {name}",
+  "deleteChatModalDescription": "Les messages et discussions seront supprimés de votre historique. Ils demereront visibles pour vos destinataires.\n\n\nAction irréversible",
+  "messageUnpinned": "Message désépinglé avec succès",
+  "deleteMessageModalTitle": "Vous vous apprêtez à effacer vos messages",
+  "deleteMessageModalDescription": "Les messages seront effacés de votre historique et resteront visibles pour {name}. La discussion restera active\n\n\nAction irréversible",
+  "deleteMessages": "Effacer les messages",
+  "missed": "Manqués",
+  "newCall": "Nouvel appel",
+  "startGroupCall": "Démarrer un appel de groupe"
 }

@@ -3,6 +3,7 @@ const constants = {
   usersTable: "users",
   chatsTable: "chats",
   messagesTable: "messages",
+  pinnedChats: "pinned_chats",
 };
 
 module.exports = constants;

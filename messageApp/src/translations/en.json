@@ -27,5 +27,20 @@
   "markUnread": "Mark as Unread",
   "accessContactDetails": "Access Contact Details",
   "deleteAllMessage": "Delete All Messages",
-  "deleteConversation": "Delete Conversation"
+  "deleteConversation": "Delete Conversation",
+  "messageSuccessfullyPinned": "Message Successfully Pinned",
+  "conversationSuccessfullyArchived": "Conversation successfully archived",
+  "archiveChatModalTitle": "You are about to archive the conversation with {name}",
+  "archiveChatModalDescription": "The conversation will remain accessible from the “Archived Messages” section",
+  "archiveConversation": "Archive Conversations",
+  "cancel": "Cancel",
+  "deleteChatModalTitle": "You are about to delete your conversation with {name}",
+  "deleteChatModalDescription": "The messages and conversations will be deleted from your history. They will remain visible to your recipients.\n\n\nIrreversible Action",
+  "messageUnpinned": "Message Successfully Unpinned",
+  "deleteMessageModalTitle": "You are about to delete your messages",
+  "deleteMessageModalDescription": "the messages will be deleted from your history and will remain visible to {name}. The conversation will stay active.\n\n\nIrreversible Action",
+  "deleteMessages": "Delete Messages",
+  "missed": "Missed",
+  "newCall": "New Call",
+  "startGroupCall": "Start a Group Call"
 }
