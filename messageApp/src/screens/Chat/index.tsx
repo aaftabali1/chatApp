@@ -24,11 +24,12 @@ import ChatFilter from '../../components/ChatFilter';
 import ChatAction from '../../components/ChatAction';
 import SuccessModel from '../../components/Success';
 import TwoBtnAlert from '../../components/TwoBtnAlert';
+import {fetchChats, pinChat, unPinChat} from '../../redux/slices/chatsSlice';
 
 const Chat = () => {
   const {t} = useTranslation();
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const username = useSelector(selectUsername);
 
   const [visible, setVisible] = useState(false);
@@ -47,6 +48,8 @@ const Chat = () => {
   const [showDeleteMessageSuccessModal, setShowDeleteMessageSuccessModal] =
     useState(false);
 
+  const chats = useSelector((state: any) => state.chats.chats);
+
   useEffect(() => {
     getUsername();
   }, [dispatch]);
@@ -55,7 +58,7 @@ const Chat = () => {
     useCallback(() => {
       getMessages();
       return () => {};
-    }, [username]),
+    }, [username, dispatch]),
   );
 
   const getUsername = async () => {
@@ -74,14 +77,15 @@ const Chat = () => {
   };
 
   const getMessages = () => {
-    socket.emit('getMessages', username);
+    // socket.emit('getMessages', username);
+    dispatch(fetchChats({username}));
   };
 
   useEffect(() => {
     if (username == null) return;
     getMessages();
     updateUser(username);
-  }, [username]);
+  }, [username, dispatch]);
 
   const messageListCallback = useCallback(
     async (messagesList: any) => {
@@ -98,15 +102,21 @@ const Chat = () => {
     };
   }, [socket, messageListCallback]);
 
-  const pinnedItem = () => {
+  const handleUnPinChat = ({pinChatId}: {pinChatId: string}) => {
+    dispatch(unPinChat({pinChatId, username}));
+  };
+
+  const pinnedItem = ({item}: any) => {
     return (
       <View style={styles.pinnedItemOuter}>
-        <TouchableOpacity style={styles.removePin}>
+        <TouchableOpacity
+          onPress={() => handleUnPinChat({pinChatId: item.pinned})}
+          style={styles.removePin}>
           <Text style={styles.closeText}>X</Text>
         </TouchableOpacity>
         <Image source={images.user} style={styles.profileImage} />
         <Text style={styles.pinnedUsername} numberOfLines={1}>
-          User Name
+          {item.senderId == username ? item.receiverId : item.senderId}
         </Text>
       </View>
     );
@@ -142,6 +152,14 @@ const Chat = () => {
     setShowChatActions(false);
   };
 
+  const handlePinChat = ({chatId}: {chatId: string}) => {
+    dispatch(pinChat({chatId, username}));
+    // setShowMessagePinnedModal(true);
+    //                   setTimeout(() => {
+    //                     setShowMessagePinnedModal(false);
+    //                   }, 2000);
+  };
+
   return (
     <SafeAreaView style={styles.chatscreen}>
       <View style={styles.chattopContainer}>
@@ -155,18 +173,21 @@ const Chat = () => {
         <TextInput style={styles.searchInput} placeholder={t('search')} />
       </View>
 
-      <View style={styles.pinnedOuter}>
-        <Text style={globalStyles.regularText14}>
-          {t('pinnedConversations')}
-        </Text>
-        <FlatList
-          data={[{id: 'asdf'}, {id: 'asdfef'}]}
-          showsHorizontalScrollIndicator={false}
-          horizontal
-          renderItem={pinnedItem}
-          keyExtractor={(item: any) => item.id}
-        />
-      </View>
+      {chats?.length > 0 &&
+        chats.filter((item: any) => item?.pinned != null)?.length > 0 && (
+          <View style={styles.pinnedOuter}>
+            <Text style={globalStyles.regularText14}>
+              {t('pinnedConversations')}
+            </Text>
+            <FlatList
+              data={chats.filter((item: any) => item?.pinned != null)}
+              showsHorizontalScrollIndicator={false}
+              horizontal
+              renderItem={pinnedItem}
+              keyExtractor={(item: any) => item.id}
+            />
+          </View>
+        )}
 
       <View style={styles.header}>
         <Text style={styles.discussHeadign}>{t('myDiscussions')}</Text>
@@ -176,17 +197,19 @@ const Chat = () => {
       </View>
 
       <View style={styles.chatlistContainer}>
-        {messages.length > 0 ? (
+        {chats.length > 0 ? (
           <SwipeListView
-            data={messages}
-            renderItem={({item}) => (
-              <ChatComponent
-                item={item}
-                onLongPress={() => {
-                  setShowChatActions(true);
-                }}
-              />
-            )}
+            data={chats.filter((item: any) => item?.pinned == null)}
+            renderItem={({item}) => {
+              return (
+                <ChatComponent
+                  item={item}
+                  onLongPress={() => {
+                    setShowChatActions(true);
+                  }}
+                />
+              );
+            }}
             keyExtractor={(item: any) => item?.id}
             renderHiddenItem={(data, rowMap) => {
               return (
@@ -210,10 +233,11 @@ const Chat = () => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
-                      setShowMessagePinnedModal(true);
-                      setTimeout(() => {
-                        setShowMessagePinnedModal(false);
-                      }, 2000);
+                      handlePinChat({chatId: data.item.id});
+                      // setShowMessagePinnedModal(true);
+                      // setTimeout(() => {
+                      //   setShowMessagePinnedModal(false);
+                      // }, 2000);
                     }}
                     style={styles.rightThirdItem}>
                     <Image source={images.pin} style={styles.trashImage} />

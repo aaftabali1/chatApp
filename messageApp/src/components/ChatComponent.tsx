@@ -9,12 +9,12 @@ import colors from '../utils/colors';
 const ChatComponent = ({item, onLongPress}: any) => {
   const username = useSelector(selectUsername);
 
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [messages, setMessages] = useState<any>({});
   const [user, setUser] = useState('');
 
   useLayoutEffect(() => {
-    setMessages(item.messages[0]);
+    setMessages(item?.messages?.length > 0 ? item.messages[0] : '');
 
     const setUsername = async () => {
       if (item.senderId == username) {
@@ -27,7 +27,7 @@ const ChatComponent = ({item, onLongPress}: any) => {
   }, []);
 
   useEffect(() => {
-    setMessages(item.messages[0]);
+    setMessages(item?.messages?.length > 0 ? item.messages[0] : '');
   }, [item]);
 
   const handleNavigation = () => {

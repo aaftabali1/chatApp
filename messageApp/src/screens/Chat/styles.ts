@@ -157,9 +157,10 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   pinnedUsername: {
-    maxWidth: 60,
+    width: moderateScale(60),
     marginTop: 5,
     ...globalStyles.lightText14,
+    textAlign: 'center',
   },
   removePin: {
     backgroundColor: colors.textColor,

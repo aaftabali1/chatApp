@@ -2,16 +2,39 @@ const database = require("../config/db");
 
 const db = database.getDbServiceInstance();
 
+exports.chats = async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    if (username) {
+      const chats = await db.getAllMessagesByUsername({
+        sender: username,
+        receiver: username,
+      });
+
+      res.json(chats);
+    } else {
+      res.status(500).json({ error: "username is required" });
+    }
+  } catch (e) {
+    console.log("Error", e);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 exports.pinChat = async (req, res) => {
   try {
-    const { chatId, userId } = req.body;
+    const { chatId, username } = req.body;
 
-    if (chatId && userId) {
-      await db.pinChat({ chatId, userId });
+    if (chatId && username) {
+      await db.pinChat({
+        chatId,
+        userId: username,
+      });
 
       const chats = await db.getAllMessagesByUsername({
-        sender: userId,
-        receiver: userId,
+        sender: username,
+        receiver: username,
       });
 
       res.json(chats);
@@ -26,24 +49,24 @@ exports.pinChat = async (req, res) => {
 
 exports.unpinChat = async (req, res) => {
   try {
-    const { chatId, username } = req.body;
+    const { pinChatId, username } = req.body;
 
-    if (chatId && username) {
-      await db.unpinChat({ chatId, userId: username });
+    if (pinChatId && username) {
+      await db.unpinChat({
+        pinChatId,
+      });
 
       const chats = await db.getAllMessagesByUsername({
-        sender: userId,
-        receiver: userId,
+        sender: username,
+        receiver: username,
       });
 
       res.json(chats);
     } else {
-      res.status(500).json({ error: "chatId and username is required" });
+      res.status(500).json({ error: "chatId and userId is required" });
     }
   } catch (e) {
     console.log("Error", e);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
-// Implement other controller methods for CRUD operations
