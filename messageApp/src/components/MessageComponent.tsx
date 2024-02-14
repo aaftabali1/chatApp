@@ -3,8 +3,7 @@ import React from 'react';
 import {styles} from '../utils/commonStyles';
 
 export default function MessageComponent({item, user}: any) {
-  const status = item.senderId !== user;
-
+  const status = item.sender_id != user;
   return (
     <View>
       <View
@@ -14,12 +13,6 @@ export default function MessageComponent({item, user}: any) {
             : [styles.mmessageWrapper, {alignItems: 'flex-end'}]
         }>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          {/* <Ionicons
-            name="person-circle-outline"
-            size={30}
-            color="black"
-            style={styles.mavatar}
-          /> */}
           <Image
             source={require('../assets/images/user.png')}
             style={styles.mavatar}
@@ -30,11 +23,11 @@ export default function MessageComponent({item, user}: any) {
                 ? styles.mmessage
                 : [styles.mmessage, {backgroundColor: 'rgb(194, 243, 194)'}]
             }>
-            <Text>{item.message}</Text>
+            <Text>{item.content}</Text>
           </View>
         </View>
         <Text style={{marginLeft: 40}}>
-          {new Date(item.time).toLocaleTimeString([], {
+          {new Date(item.date).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
           })}

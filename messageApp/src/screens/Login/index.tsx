@@ -7,23 +7,18 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-
-//👇🏻 Import the app styles
 import {styles} from '../../utils/commonStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useNavigation} from '@react-navigation/native';
+import {NavigationProp, useNavigation} from '@react-navigation/native';
 import axios from 'axios';
 import constants from '../../utils/constants';
 
 const Login = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<any>>();
   const [username, setUsername] = useState('');
 
   const storeUsername = async () => {
     try {
-      //👇🏻 async function - saves the username to AsyncStorage
-      //   redirecting to the Chat page
-
       let data = JSON.stringify({
         username: username,
       });
@@ -40,24 +35,26 @@ const Login = () => {
 
       axios
         .request(config)
-        .then(response => {
+        .then(async response => {
           console.log(JSON.stringify(response.data));
+          await AsyncStorage.setItem('username', username);
+          await AsyncStorage.setItem(
+            'userId',
+            response.data.user.user_id.toString(),
+          );
           navigation.navigate('Chat');
         })
         .catch(error => {
-          navigation.navigate('Chat');
+          // navigation.navigate('Chat');
           console.log(error);
         });
-      await AsyncStorage.setItem('username', username);
     } catch (e) {
       Alert.alert('Error! While saving username');
     }
   };
 
-  //👇🏻 checks if the input field is empty
   const handleSignIn = () => {
     if (username.trim()) {
-      //👇🏻 calls AsyncStorage function
       storeUsername();
     } else {
       Alert.alert('Username is required.');

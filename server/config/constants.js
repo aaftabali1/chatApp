@@ -3,7 +3,9 @@ const constants = {
   usersTable: "users",
   chatsTable: "chats",
   messagesTable: "messages",
-  pinnedChats: "pinned_chats",
+  attachmentsTable: "attachments",
+  chatMappingTable: "chat_mapping",
+  participantsTable: "participants",
 };
 
 module.exports = constants;

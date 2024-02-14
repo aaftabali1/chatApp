@@ -22,8 +22,7 @@ const db = database.getDbServiceInstance();
 app.get("/api/chats", async (req, res) => {
   try {
     const chats = await db.getAllMessagesByUsername({
-      sender: req.query.username,
-      receiver: req.query.username,
+      userId: req.query.username,
     });
 
     res.json(chats);
@@ -52,17 +51,22 @@ app.post("/register", async (req, res) => {
     const userFound = await db.getUser({ username });
 
     if (userFound.length > 0) {
-      res.status(400).json({ message: "User already registered" });
+      res
+        .status(200)
+        .json({ message: "User already registered", user: userFound[0] });
     } else {
       const registerUser = await db.registerUser({
         username,
-        mobile,
+        mobile: "",
         status: "1",
       });
 
       if (registerUser) {
         console.log("User registered successfully");
-        res.status(201).json({ message: "User registered successfully" });
+        res.status(201).json({
+          message: "User registered successfully",
+          user: { user_id: registerUser.insertId, ...registerUser },
+        });
       }
     }
   } catch (error) {
@@ -97,8 +101,8 @@ socketIO.on("connection", (socket) => {
   socket.on("call", async (data) => {
     const { calleeId, callerId, callId, rtcMessage } = data;
 
-    const fetchUser = await db.getUser({ username: calleeId });
-    const fetchUserCaller = await db.getUser({ username: callerId });
+    const fetchUser = await db.getUserById({ userId: calleeId });
+    const fetchUserCaller = await db.getUserById({ userId: callerId });
 
     let callInsert = {};
 
@@ -106,7 +110,7 @@ socketIO.on("connection", (socket) => {
       callInsert = await db.insertCall({
         callerId: callerId,
         receiverId: calleeId,
-        type: "video",
+        type: 1, // 1 for video call
       });
     } else {
       callInsert = {
@@ -145,10 +149,10 @@ socketIO.on("connection", (socket) => {
   socket.on("answerCall", async (data) => {
     const { callerId, calleeId, rtcMessage, callId } = data;
 
-    await db.updateCall({ callId, status: "1" });
+    await db.updateCall({ callId, status: "Answered" });
 
-    const fetchUser = await db.getUser({ username: calleeId });
-    const fetchUserCaller = await db.getUser({ username: callerId });
+    const fetchUser = await db.getUserById({ userId: calleeId });
+    const fetchUserCaller = await db.getUserById({ userId: callerId });
 
     socket.to(fetchUserCaller[0].socket).emit("callAnswered", {
       callee: fetchUser[0].username,
@@ -185,7 +189,7 @@ socketIO.on("connection", (socket) => {
   socket.on("endCall", async (data) => {
     const { callerId, calleeId } = data;
 
-    const fetchUserCaller = await db.getUser({ username: callerId });
+    const fetchUserCaller = await db.getUserById({ userId: callerId });
 
     socket.to(fetchUserCaller[0].socket).emit("callEnd", {});
   });
@@ -206,33 +210,29 @@ socketIO.on("connection", (socket) => {
     await db.updateUser({ socket: socket.id, username });
   });
 
-  socket.on("addUser", async ({ senderId, receiverId }) => {
-    await db.createChat({ sender: senderId, receiver: receiverId });
-
-    socket.join(receiverId);
-    socket.emit("messageList", {
-      id: generateID(),
-      senderId,
-      receiverId,
-      messages: [],
-    });
-
-    const fetchUser = await db.getUser({ username: receiverId });
-
-    if (fetchUser.length > 0) {
-      socket.to(fetchUser[0].socket).emit("messageList", {
-        id: generateID(),
-        senderId,
-        receiverId,
-        messages: [],
+  socket.on("addUser", async ({ senderId, receiverUsername }) => {
+    const receiverUser = await db.getUser({ username: receiverUsername });
+    if (receiverUser.length > 0) {
+      await db.createChat({
+        senderId: senderId,
+        receiverId: receiverUser[0].user_id,
       });
+      const chatsReceiver = await db.getAllMessagesByUsername({
+        userId: receiverUser[0].user_id,
+      });
+      const chatsSender = await db.getAllMessagesByUsername({
+        userId: senderId,
+      });
+      socket.join(receiverUser[0].socket);
+      socket.emit("allMessageList", chatsReceiver);
+
+      socket.to(receiverUser[0].socket).emit("allMessageList", chatsSender);
     }
   });
 
-  socket.on("getMessages", async (username) => {
+  socket.on("getMessages", async (userId) => {
     const chats = await db.getAllMessagesByUsername({
-      sender: username,
-      receiver: username,
+      userId: userId,
     });
 
     socket.emit("allMessageList", chats);
@@ -243,14 +243,14 @@ socketIO.on("connection", (socket) => {
     console.log("🔥: A user disconnected");
   });
 
-  socket.on("messageRead", async ({ chatId, senderId, receiverId }) => {
-    await db.markChatRead({ chatId, senderId, receiverId });
+  socket.on("messageRead", async ({ chatId, userId }) => {
+    await db.markChatRead({ chatId, userId });
   });
 
-  socket.on("findUser", async ({ id, receiver, sender, offset }) => {
+  socket.on("findUser", async ({ chatId, receiver, sender, offset }) => {
     const receiverData = await db.getUser({ username: receiver });
     const senderData = await db.getUser({ username: sender });
-    const allMessages = await db.getUserMessages({ chatId: id, offset });
+    const allMessages = await db.getUserMessages({ chatId, offset });
 
     socket.emit("foundUser", allMessages);
 
@@ -279,8 +279,7 @@ socketIO.on("connection", (socket) => {
       const allMessages = await db.getUserMessages({ chatId: chat_id, offset });
 
       const chatsReceiver = await db.getAllMessagesByUsername({
-        sender: receiver,
-        receiver,
+        userId: receiverData[0].user_id,
       });
       socket.to(receiverData[0].socket).emit("newMessage", {
         title: sender,
@@ -296,8 +295,7 @@ socketIO.on("connection", (socket) => {
       }
       if (senderData.length > 0) {
         const chatsSender = await db.getAllMessagesByUsername({
-          sender,
-          receiver,
+          userId: sender,
         });
         socket.to(senderData[0].socket).emit("getNewMessage", allMessages);
         socket.to(senderData[0].socket).emit("allMessageList", chatsSender);

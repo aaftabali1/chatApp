@@ -17,7 +17,12 @@ import socket from '../../utils/socket';
 import styles from './styles';
 import {SwipeListView} from 'react-native-swipe-list-view';
 import {useDispatch, useSelector} from 'react-redux';
-import {selectUsername, setUsername} from '../../redux/slices/authSlice';
+import {
+  selectUserId,
+  selectUsername,
+  setUsername,
+  setUserId,
+} from '../../redux/slices/authSlice';
 import {useFocusEffect} from '@react-navigation/native';
 import {globalStyles} from '../../utils/commonStyles';
 import ChatFilter from '../../components/ChatFilter';
@@ -31,6 +36,9 @@ const Chat = () => {
 
   const dispatch = useDispatch<any>();
   const username = useSelector(selectUsername);
+  const userId = useSelector(selectUserId);
+
+  const chats = useSelector((state: any) => state.chats.chats);
 
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -48,24 +56,30 @@ const Chat = () => {
   const [showDeleteMessageSuccessModal, setShowDeleteMessageSuccessModal] =
     useState(false);
 
-  const chats = useSelector((state: any) => state.chats.chats);
-
   useEffect(() => {
     getUsername();
-  }, [dispatch]);
+  }, []);
+
+  useEffect(() => {
+    setMessages(chats);
+  }, [chats]);
 
   useFocusEffect(
     useCallback(() => {
       getMessages();
       return () => {};
-    }, [username, dispatch]),
+    }, [username, dispatch, userId]),
   );
 
   const getUsername = async () => {
     try {
       const value = await AsyncStorage.getItem('username');
+      const valueUserId = await AsyncStorage.getItem('userId');
       if (value !== null) {
         dispatch(setUsername(value));
+      }
+      if (valueUserId !== null) {
+        dispatch(setUserId(valueUserId));
       }
     } catch (e) {
       console.error('Error while loading username!');
@@ -77,22 +91,22 @@ const Chat = () => {
   };
 
   const getMessages = () => {
-    // socket.emit('getMessages', username);
-    dispatch(fetchChats({username}));
+    dispatch(fetchChats({username: userId}));
   };
 
   useEffect(() => {
     if (username == null) return;
+    if (userId == null) return;
     getMessages();
     updateUser(username);
-  }, [username, dispatch]);
+  }, [username, dispatch, userId]);
 
   const messageListCallback = useCallback(
     async (messagesList: any) => {
       setMessages(messagesList);
-      getUsername();
+      // getUsername();
     },
-    [socket, getUsername],
+    [socket],
   );
 
   useEffect(() => {
@@ -103,20 +117,20 @@ const Chat = () => {
   }, [socket, messageListCallback]);
 
   const handleUnPinChat = ({pinChatId}: {pinChatId: string}) => {
-    dispatch(unPinChat({pinChatId, username}));
+    dispatch(unPinChat({pinChatId, userId}));
   };
 
   const pinnedItem = ({item}: any) => {
     return (
       <View style={styles.pinnedItemOuter}>
         <TouchableOpacity
-          onPress={() => handleUnPinChat({pinChatId: item.pinned})}
+          onPress={() => handleUnPinChat({pinChatId: item.pinned_id})}
           style={styles.removePin}>
           <Text style={styles.closeText}>X</Text>
         </TouchableOpacity>
         <Image source={images.user} style={styles.profileImage} />
         <Text style={styles.pinnedUsername} numberOfLines={1}>
-          {item.senderId == username ? item.receiverId : item.senderId}
+          {item.receiver_name}
         </Text>
       </View>
     );
@@ -153,7 +167,7 @@ const Chat = () => {
   };
 
   const handlePinChat = ({chatId}: {chatId: string}) => {
-    dispatch(pinChat({chatId, username}));
+    dispatch(pinChat({chatId, userId}));
     // setShowMessagePinnedModal(true);
     //                   setTimeout(() => {
     //                     setShowMessagePinnedModal(false);
@@ -173,18 +187,18 @@ const Chat = () => {
         <TextInput style={styles.searchInput} placeholder={t('search')} />
       </View>
 
-      {chats?.length > 0 &&
-        chats.filter((item: any) => item?.pinned != null)?.length > 0 && (
+      {messages?.length > 0 &&
+        messages.filter((item: any) => item?.pinned != null)?.length > 0 && (
           <View style={styles.pinnedOuter}>
             <Text style={globalStyles.regularText14}>
               {t('pinnedConversations')}
             </Text>
             <FlatList
-              data={chats.filter((item: any) => item?.pinned != null)}
+              data={messages.filter((item: any) => item?.pinned != null)}
               showsHorizontalScrollIndicator={false}
               horizontal
               renderItem={pinnedItem}
-              keyExtractor={(item: any) => item.id}
+              keyExtractor={(item: any) => item.chat_id}
             />
           </View>
         )}
@@ -197,9 +211,9 @@ const Chat = () => {
       </View>
 
       <View style={styles.chatlistContainer}>
-        {chats.length > 0 ? (
+        {messages.length > 0 ? (
           <SwipeListView
-            data={chats.filter((item: any) => item?.pinned == null)}
+            data={messages.filter((item: any) => item?.pinned == null)}
             renderItem={({item}) => {
               return (
                 <ChatComponent
@@ -210,7 +224,7 @@ const Chat = () => {
                 />
               );
             }}
-            keyExtractor={(item: any) => item?.id}
+            keyExtractor={(item: any) => item?.chat_id}
             renderHiddenItem={(data, rowMap) => {
               return (
                 <View style={styles.leftHiddenItems}>
@@ -233,7 +247,7 @@ const Chat = () => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
-                      handlePinChat({chatId: data.item.id});
+                      handlePinChat({chatId: data.item.chat_id});
                       // setShowMessagePinnedModal(true);
                       // setTimeout(() => {
                       //   setShowMessagePinnedModal(false);
@@ -255,7 +269,8 @@ const Chat = () => {
           </View>
         )}
       </View>
-      {visible ? <Modal setVisible={setVisible} user={username} /> : ''}
+
+      {visible ? <Modal setVisible={setVisible} userId={userId} /> : ''}
       <TouchableOpacity
         onPress={() => setVisible(true)}
         style={styles.editButton}>

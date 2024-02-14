@@ -4,7 +4,7 @@ import {styles} from '../utils/commonStyles';
 
 import socket from '../utils/socket';
 
-const Modal = ({setVisible, user}: any) => {
+const Modal = ({setVisible, userId}: any) => {
   const [groupName, setGroupName] = useState('');
 
   //👇🏻 Function that closes the Modal component
@@ -17,7 +17,7 @@ const Modal = ({setVisible, user}: any) => {
       return;
     }
     //👇🏻 sends a message containing the group name to the server
-    socket.emit('addUser', {senderId: user, receiverId: groupName});
+    socket.emit('addUser', {senderId: userId, receiverUsername: groupName});
     closeModal();
   };
 

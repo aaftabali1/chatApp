@@ -8,8 +8,7 @@ exports.chats = async (req, res) => {
 
     if (username) {
       const chats = await db.getAllMessagesByUsername({
-        sender: username,
-        receiver: username,
+        userId: username,
       });
 
       res.json(chats);
@@ -24,17 +23,16 @@ exports.chats = async (req, res) => {
 
 exports.pinChat = async (req, res) => {
   try {
-    const { chatId, username } = req.body;
+    const { chatId, userId } = req.body;
 
-    if (chatId && username) {
+    if (chatId && userId) {
       await db.pinChat({
         chatId,
-        userId: username,
+        userId,
       });
 
       const chats = await db.getAllMessagesByUsername({
-        sender: username,
-        receiver: username,
+        userId,
       });
 
       res.json(chats);
@@ -49,7 +47,30 @@ exports.pinChat = async (req, res) => {
 
 exports.unpinChat = async (req, res) => {
   try {
-    const { pinChatId, username } = req.body;
+    const { pinChatId, userId } = req.body;
+
+    if (pinChatId && pinChatId) {
+      await db.unpinChat({
+        pinChatId,
+      });
+
+      const chats = await db.getAllMessagesByUsername({
+        userId,
+      });
+
+      res.json(chats);
+    } else {
+      res.status(500).json({ error: "chatId and userId is required" });
+    }
+  } catch (e) {
+    console.log("Error", e);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+exports.deleteChat = async (req, res) => {
+  try {
+    const { chatId, username } = req.body;
 
     if (pinChatId && username) {
       await db.unpinChat({

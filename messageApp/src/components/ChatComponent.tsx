@@ -1,13 +1,14 @@
-import {View, Text, Pressable, Image} from 'react-native';
 import React, {useEffect, useLayoutEffect, useState} from 'react';
+import {View, Text, Pressable, Image} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {styles} from '../utils/commonStyles';
 import {useSelector} from 'react-redux';
-import {selectUsername} from '../redux/slices/authSlice';
+import {selectUserId, selectUsername} from '../redux/slices/authSlice';
 import colors from '../utils/colors';
 
 const ChatComponent = ({item, onLongPress}: any) => {
   const username = useSelector(selectUsername);
+  const userId = useSelector(selectUserId);
 
   const navigation = useNavigation<any>();
   const [messages, setMessages] = useState<any>({});
@@ -17,11 +18,7 @@ const ChatComponent = ({item, onLongPress}: any) => {
     setMessages(item?.messages?.length > 0 ? item.messages[0] : '');
 
     const setUsername = async () => {
-      if (item.senderId == username) {
-        setUser(item.receiverId);
-      } else {
-        setUser(item.senderId);
-      }
+      setUser(item.receiver_name);
     };
     setUsername();
   }, []);
@@ -61,13 +58,13 @@ const ChatComponent = ({item, onLongPress}: any) => {
               styles.cmessage,
               item?.unreadCount > 0 && {color: colors.primaryBlue},
             ]}>
-            {messages?.message ? messages.message : 'Tap to start chatting'}
+            {messages?.content ? messages.content : 'Tap to start chatting'}
           </Text>
         </View>
         <View>
           <Text style={[styles.ctime]}>
-            {messages?.time
-              ? new Date(messages.time).toLocaleTimeString([], {
+            {messages?.date
+              ? new Date(messages.date).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
                 })

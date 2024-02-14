@@ -17,7 +17,7 @@ import {getCurrentRouteName, navigationRef} from './utils/navigationRef';
 import constants from './utils/constants';
 import Settings from './screens/Settings';
 import Contacts from './screens/Contacts';
-import {Provider, useDispatch, useSelector} from 'react-redux';
+import {Provider} from 'react-redux';
 import store from './redux/store';
 import notifee, {AndroidImportance} from '@notifee/react-native';
 

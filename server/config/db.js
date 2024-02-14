@@ -5,6 +5,8 @@ const {
   usersTable,
   callsTable,
   pinnedChats,
+  participantsTable,
+  chatMappingTable,
 } = require("./constants");
 
 let instance = null;
@@ -14,7 +16,7 @@ const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "12345678",
-  database: "chat",
+  database: "message_app",
 });
 // connect to the MySQL database
 connection.connect((error) => {
@@ -49,15 +51,18 @@ class db {
     return instance ? instance : new db();
   }
 
-  async getUserChats({ sender, receiver }) {
+  async getUserChats({ senderId }) {
     try {
       const response = await new Promise((resolve, reject) => {
-        // const query = `SELECT * FROM ${chatsTable} WHERE senderId = ? OR receiverId = ?`;
-        const query = `SELECT c.*, pc.id AS pinned
-        FROM ${chatsTable} c
-        LEFT JOIN ${pinnedChats} pc ON c.id = pc.chatId AND pc.userId = ?
-        WHERE (c.senderId = ? OR c.receiverId = ?);`;
-        connection.query(query, [sender, receiver, sender], (err, results) => {
+        const query = `
+        SELECT p.chat_id, c.name, u.username as receiver_name, cm.is_pinned as pinned, cm.chat_mapping_id as pinned_id
+        FROM ${participantsTable} p
+        LEFT JOIN ${chatsTable} c ON c.chat_id = p.chat_id
+        LEFT JOIN ${usersTable} u ON u.user_id = p.user_id
+        LEFT JOIN ${chatMappingTable} cm ON cm.chat_id = p.chat_id AND cm.user_id = p.user_id AND is_pinned = 1
+        WHERE p.user_id = ? ORDER BY p.chat_id DESC;
+        `;
+        connection.query(query, [senderId, senderId], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);
         });
@@ -87,7 +92,12 @@ class db {
     try {
       const page = offset * 20;
       const response = await new Promise((resolve, reject) => {
-        const query = `SELECT * FROM ${messagesTable} WHERE chatId = ? ORDER BY id DESC LIMIT 20 OFFSET ?`;
+        // const query = `SELECT * FROM ${messagesTable} WHERE chatId = ? ORDER BY id DESC LIMIT 20 OFFSET ?`;
+        const query = `
+          SELECT m.message_id, m.chat_id, m.sender_id, m.content, m.date
+          FROM ${messagesTable} m
+          WHERE m.chat_id = ? 
+          ORDER BY m.message_id DESC LIMIT 20 OFFSET ?;`;
         connection.query(query, [chatId, page], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);
@@ -114,11 +124,26 @@ class db {
     }
   }
 
+  async getUserById({ userId }) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = `SELECT * FROM ${usersTable} WHERE user_id = ?`;
+        connection.query(query, [userId], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async registerUser({ username, mobile, status }) {
     try {
       const time = new Date();
       const response = await new Promise((resolve, reject) => {
-        const query = `INSERT INTO ${usersTable} (username, mobile, status, time) VALUES (?, ?, ?, ?)`;
+        const query = `INSERT INTO ${usersTable} (username, mobile, active, time) VALUES (?, ?, ?, ?)`;
 
         connection.query(
           query,
@@ -152,16 +177,34 @@ class db {
     }
   }
 
-  async createChat({ sender, receiver }) {
+  async createChat({ senderId, receiverId }) {
     try {
       const time = new Date();
-      const response = await new Promise((resolve, reject) => {
-        const query = `INSERT INTO ${chatsTable} (senderId, receiverId, time) VALUES (?,?,?)`;
-
-        connection.query(query, [sender, receiver, time], (err, results) => {
+      const createChatResponse = await new Promise((resolve, reject) => {
+        const queryToCreateChat = `INSERT INTO ${chatsTable} (type, name, created_time) VALUES (?,?,?)`;
+        connection.query(queryToCreateChat, [0, "", time], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);
         });
+      });
+
+      const response = await new Promise((resolve, reject) => {
+        const queryToAddParticipants = `INSERT INTO ${participantsTable} (chat_id, user_id, time) VALUES (?,?,?), (?,?,?)`;
+        connection.query(
+          queryToAddParticipants,
+          [
+            createChatResponse.insertId,
+            senderId,
+            time,
+            createChatResponse.insertId,
+            receiverId,
+            time,
+          ],
+          (err, results) => {
+            if (err) reject(new Error(err.message));
+            resolve(results);
+          }
+        );
       });
       return response;
     } catch (error) {
@@ -176,11 +219,11 @@ class db {
         const query =
           "INSERT INTO " +
           messagesTable +
-          " (`message`, `seen`, `chatId`, `senderId`, `receiverId`, `time`) VALUES (?,?,?,?,?,?)";
+          " (chat_id, sender_id, content, date, is_read) VALUES (?,?,?,?,?)";
 
         connection.query(
           query,
-          [message, read, chatId, senderId, receiverId, time],
+          [chatId, senderId, message, time, read],
           (err, results) => {
             if (err) reject(new Error(err.message));
             resolve(results);
@@ -197,11 +240,11 @@ class db {
     try {
       const time = new Date();
       const response = await new Promise((resolve, reject) => {
-        const query = `INSERT INTO ${callsTable} (callerId, receiverId, time, type) VALUES (?,?,?,?)`;
+        const query = `INSERT INTO ${callsTable} (caller_id, receiver_id, call_type, start_time, end_time, status) VALUES (?,?,?,?,?,?)`;
 
         connection.query(
           query,
-          [callerId, receiverId, time, type],
+          [callerId, receiverId, type, time, time, "Calling"],
           (err, results) => {
             if (err) reject(new Error(err.message));
             resolve(results);
@@ -245,11 +288,14 @@ class db {
     }
   }
 
-  async getUnreadMessages({ chatId, senderId, receiverId }) {
+  async getUnreadMessages({ chatId, userId }) {
     try {
       const response = await new Promise((resolve, reject) => {
-        const query = `SELECT * FROM ${messagesTable} WHERE chatId = ? AND seen=0 AND receiverId = ?`;
-        connection.query(query, [chatId, receiverId], (err, results) => {
+        const query = `SELECT m.message_id, m.chat_id, m.sender_id, m.content, m.date
+        FROM ${messagesTable} m
+        JOIN ${participantsTable} uc ON m.chat_id = uc.chat_id
+        WHERE uc.user_id = ? AND m.is_read = 0 AND m.sender_id != uc.user_id;`;
+        connection.query(query, [userId], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);
         });
@@ -260,22 +306,49 @@ class db {
     }
   }
 
-  async getAllMessagesByUsername({ sender, receiver }) {
+  async getOtherUsersOfChat({ chatId }) {
     try {
-      const chats = await this.getUserChats({ sender, receiver });
+      const response = await new Promise((resolve, reject) => {
+        const query = `SELECT *
+        FROM ${participantsTable} p 
+        LEFT JOIN ${usersTable} u ON u.user_id = p.user_id
+        WHERE p.chat_id = ?`;
+        connection.query(query, [chatId], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getAllMessagesByUsername({ userId }) {
+    try {
+      const chats = await this.getUserChats({ senderId: userId });
 
       for (let i = 0; i < chats.length; i++) {
+        const otherUsers = await this.getOtherUsersOfChat({
+          chatId: chats[i].chat_id,
+        });
+
         const unreadMessages = await this.getUnreadMessages({
-          chatId: chats[i].id,
-          senderId: sender,
-          receiverId: receiver,
+          chatId: chats[i].chat_id,
+          userId: userId,
         });
         const messages = await this.getUserMessages({
-          chatId: chats[i].id,
+          chatId: chats[i].chat_id,
           offset: 0,
         });
         chats[i].messages = messages;
         chats[i].unreadCount = unreadMessages.length;
+        chats[i].receiver_name = otherUsers.find(
+          (item) => item.user_id != userId
+        ).username;
+        chats[i].receiver_id = otherUsers.find(
+          (item) => item.user_id != userId
+        ).user_id;
       }
 
       return chats;
@@ -284,13 +357,29 @@ class db {
     }
   }
 
-  async markChatRead({ chatId, senderId, receiverId }) {
+  async markChatRead({ chatId, userId }) {
     try {
       const response = await new Promise((resolve, reject) => {
-        const query = `UPDATE ${messagesTable} SET seen = 1 WHERE chatId = ? AND senderId = ? AND receiverId = ?`;
+        const query = `UPDATE ${messagesTable} SET is_read = 1 WHERE chat_id = ? AND sender_id = ?`;
+        connection.query(query, [chatId, userId], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async pinChat({ chatId, userId }) {
+    try {
+      const time = new Date();
+      const response = await new Promise((resolve, reject) => {
+        const query = `INSERT INTO ${chatMappingTable} (chat_id, user_id, is_archived, is_pinned, date) VALUES (?,?,?,?,?)`;
         connection.query(
           query,
-          [chatId, senderId, receiverId],
+          [chatId, userId, 0, 1, time],
           (err, results) => {
             if (err) reject(new Error(err.message));
             resolve(results);
@@ -303,26 +392,10 @@ class db {
     }
   }
 
-  async pinChat({ chatId, userId }) {
-    try {
-      const time = new Date();
-      const response = await new Promise((resolve, reject) => {
-        const query = `INSERT INTO ${pinnedChats} (chatId, userId, time) VALUES (?,?,?)`;
-        connection.query(query, [chatId, userId, time], (err, results) => {
-          if (err) reject(new Error(err.message));
-          resolve(results);
-        });
-      });
-      return response;
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
   async unpinChat({ pinChatId }) {
     try {
       const response = await new Promise((resolve, reject) => {
-        const query = `DELETE FROM ${pinnedChats} WHERE id = ?`;
+        const query = `DELETE FROM ${chatMappingTable} WHERE chat_mapping_id = ?`;
         connection.query(query, [pinChatId], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);

@@ -21,16 +21,17 @@ import MessageComponent from '../../components/MessageComponent';
 import styles from './styles';
 import socket from '../../utils/socket';
 import {useTranslation} from 'react-i18next';
-import {useNavigation} from '@react-navigation/native';
+import {NavigationProp, useNavigation} from '@react-navigation/native';
 import images from '../../utils/images';
 import constants from '../../utils/constants';
 import {useSelector} from 'react-redux';
-import {selectUsername} from '../../redux/slices/authSlice';
+import {selectUserId, selectUsername} from '../../redux/slices/authSlice';
 
 const Messaging = ({route}: any) => {
   const {t} = useTranslation();
   const username = useSelector(selectUsername);
-  const navigation = useNavigation();
+  const userId = useSelector(selectUserId);
+  const navigation = useNavigation<NavigationProp<any>>();
   const flatListRef = useRef<any>();
 
   const {item, receiver} = route.params;
@@ -43,7 +44,7 @@ const Messaging = ({route}: any) => {
   const [showDownArrow, setShowDownArrow] = useState(false);
 
   useLayoutEffect(() => {
-    navigation.setOptions({title: receiver});
+    navigation.setOptions({title: item.receiver_name});
   }, []);
 
   const findUserCallback = useCallback(
@@ -62,9 +63,9 @@ const Messaging = ({route}: any) => {
 
   const fetchMessages = () => {
     socket.emit('findUser', {
-      id,
-      receiver: item.receiverId,
-      sender: item.senderId,
+      chatId: item.chat_id,
+      sender: userId,
+      receiver: item.receiver_id,
       offset,
     });
   };
@@ -76,9 +77,8 @@ const Messaging = ({route}: any) => {
 
   const markMessagesRead = () => {
     socket.emit('messageRead', {
-      chatId: id,
-      senderId: item.receiverId,
-      receiverId: username,
+      chatId: item.chat_id,
+      userId: item.receiver_id,
     });
   };
 
@@ -100,22 +100,11 @@ const Messaging = ({route}: any) => {
 
   //Sending new message
   const handleNewMessage = () => {
-    const hour =
-      new Date().getHours() < 10
-        ? `0${new Date().getHours()}`
-        : `${new Date().getHours()}`;
-
-    const mins =
-      new Date().getMinutes() < 10
-        ? `0${new Date().getMinutes()}`
-        : `${new Date().getMinutes()}`;
-
     const messageObject = {
       message,
-      chat_id: id,
+      chat_id: item.chat_id,
       receiver: receiver,
-      sender: username,
-      timestamp: {hour, mins},
+      sender: userId,
       offset: 0,
     };
 
@@ -195,7 +184,7 @@ const Messaging = ({route}: any) => {
           onScroll={handleScroll}
           showsVerticalScrollIndicator={false}
           renderItem={({item}) => (
-            <MessageComponent item={item} user={username} />
+            <MessageComponent item={item} user={userId} />
           )}
           keyExtractor={(item: any, i: number) => `${i}-${item.id}`}
         />
