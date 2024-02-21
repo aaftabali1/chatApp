@@ -202,6 +202,28 @@ export const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15,
   },
+  waveform: {
+    flex: 1,
+    margin: 10,
+    backgroundColor: colors.messageBg,
+    marginLeft: 40,
+  },
+  waveformContainer: {
+    backgroundColor: colors.messageBg,
+    minHeight: 60,
+    borderRadius: 10,
+    minWidth: 200,
+  },
+  playIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+    position: 'absolute',
+    zIndex: 10,
+    top: 20,
+    left: 10,
+    tintColor: colors.white,
+  },
 });
 
 export const globalStyles = StyleSheet.create({

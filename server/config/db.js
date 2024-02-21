@@ -7,6 +7,7 @@ const {
   pinnedChats,
   participantsTable,
   chatMappingTable,
+  attachmentsTable,
 } = require("./constants");
 
 let instance = null;
@@ -94,8 +95,9 @@ class db {
       const response = await new Promise((resolve, reject) => {
         // const query = `SELECT * FROM ${messagesTable} WHERE chatId = ? ORDER BY id DESC LIMIT 20 OFFSET ?`;
         const query = `
-          SELECT m.message_id, m.chat_id, m.sender_id, m.content, m.date
-          FROM ${messagesTable} m
+          SELECT m.message_id, m.chat_id, m.sender_id, m.content, m.date, atc.attachment_url, atc.attachment_type, atc.attachment_id
+          FROM ${messagesTable} m 
+          LEFT JOIN ${attachmentsTable} atc ON m.message_id = atc.message_id AND m.content = ""
           WHERE m.chat_id = ? 
           ORDER BY m.message_id DESC LIMIT 20 OFFSET ?;`;
         connection.query(query, [chatId, page], (err, results) => {
@@ -397,6 +399,21 @@ class db {
       const response = await new Promise((resolve, reject) => {
         const query = `DELETE FROM ${chatMappingTable} WHERE chat_mapping_id = ?`;
         connection.query(query, [pinChatId], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async addAudio({ messageId, audioUrl }) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = `INSERT INTO ${attachmentsTable} (message_id, attachment_type, attachment_url) VALUES (?,?,?)`;
+        connection.query(query, [messageId, 2, audioUrl], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);
         });

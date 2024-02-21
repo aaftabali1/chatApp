@@ -16,6 +16,7 @@ import {
   Image,
   SafeAreaView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import MessageComponent from '../../components/MessageComponent';
 import styles from './styles';
@@ -26,22 +27,38 @@ import images from '../../utils/images';
 import constants from '../../utils/constants';
 import {useSelector} from 'react-redux';
 import {selectUserId, selectUsername} from '../../redux/slices/authSlice';
+import AudioRecorderPlayer, {
+  AVEncoderAudioQualityIOSType,
+  AVEncodingOption,
+  AVModeIOSOption,
+  AudioEncoderAndroidType,
+  AudioSourceAndroidType,
+} from 'react-native-audio-recorder-player';
+import RNFS from 'react-native-fs';
+import RNFetchBlob from 'rn-fetch-blob';
 
 const Messaging = ({route}: any) => {
   const {t} = useTranslation();
+  const {item, receiver} = route.params;
   const username = useSelector(selectUsername);
   const userId = useSelector(selectUserId);
   const navigation = useNavigation<NavigationProp<any>>();
   const flatListRef = useRef<any>();
 
-  const {item, receiver} = route.params;
-
-  const id = item.id;
-
+  const [audioRecorderPlayer] = useState(new AudioRecorderPlayer());
+  const [recordTime, setRecordTime] = useState<any>();
+  const [recordSecs, setRecordSecs] = useState<any>();
+  const [currentPositionSec, setCurrentPositionSec] = useState<any>();
+  const [currentDurationSec, setCurrentDurationSec] = useState<any>();
+  const [playTime, setPlayTime] = useState<any>();
+  const [duration, setDuration] = useState<any>();
   const [chatMessages, setChatMessages] = useState<any>([]);
   const [message, setMessage] = useState('');
   const [offset, setOffset] = useState(0);
   const [showDownArrow, setShowDownArrow] = useState(false);
+  const [audioFile, setAudioFile] = useState<any>('');
+  const [audioPath, setAudioPath] = useState('');
+  const [audioBase, setAudioBase] = useState<any>('');
 
   useLayoutEffect(() => {
     navigation.setOptions({title: item.receiver_name});
@@ -112,6 +129,135 @@ const Messaging = ({route}: any) => {
     setMessage('');
   };
 
+  const onStartRecord = async () => {
+    const path = `${RNFS.DocumentDirectoryPath}/recording-${Math.random()
+      .toString(36)
+      .substring(2, 5)}.aac`;
+    const audioSet = {
+      AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
+      AudioSourceAndroid: AudioSourceAndroidType.MIC,
+      AVModeIOS: AVModeIOSOption.measurement,
+      AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
+      AVNumberOfChannelsKeyIOS: 2,
+      AVFormatIDKeyIOS: AVEncodingOption.aac,
+    };
+    const meteringEnabled = false;
+    // await setRecordTime(0);
+    try {
+      // Start the recording and get the audio URI
+      const uri = await audioRecorderPlayer?.startRecorder(
+        undefined,
+        audioSet,
+        meteringEnabled,
+      );
+      audioRecorderPlayer.addRecordBackListener(e => {
+        setRecordTime(
+          audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)),
+        );
+        setRecordSecs(e.currentPosition);
+        return;
+      });
+      setAudioPath(uri);
+    } catch (error) {
+      console.log('Uh-oh! Failed to start recording:', error);
+    }
+  };
+
+  const prepRecording = async () => {
+    try {
+      const path = `recording-${Math.random().toString(36).substring(2, 5)}`;
+      await audioRecorderPlayer?.stopRecorder();
+      const fileContent = await RNFS.readFile(audioPath, 'base64');
+      const fileInfo = await RNFS.stat(audioPath);
+      const vnData = {
+        fileCopyUri: fileInfo?.path,
+        size: fileInfo?.size,
+        type: 'audio/mpeg',
+        name: `${path}.aac`,
+      };
+      const vnBase = `data:application/audio;base64,${fileContent}`;
+      setAudioFile(vnData);
+      setAudioBase(vnBase);
+    } catch (error) {
+      console.log('Uh-oh! Failed to stop and send recording:', error);
+    }
+  };
+
+  // const playAudio = async (newAudioUrl:string) => {
+  //   if (active === newAudioUrl) {
+  //   try {
+  //   if (isPlaying) {
+  //   await SoundPlayer.pause(); // Pause the audio if already playing
+  //   setIsPlaying(false);
+  //   } else {
+  //   await SoundPlayer.resume(); // Resume playing the audio if paused
+  //   setIsPlaying(true);
+  //   }
+  //   } catch (error) {
+  //   console.log('Oh no! An error occurred while pausing/resuming audio:', error);
+  //   }
+  //   } else {
+  //   try {
+  //   if (isPlaying) {
+  //   await SoundPlayer.stop(); // Stop the currently playing audio
+  //   }
+  //   dispatch(setPlaying(newAudioUrl)); // Set the new audio URL
+  //   setIsPlaying(true);
+  //   const soundData = await SoundPlayer.getInfo();
+  //   setTotalDuration(soundData?.duration);
+  //   SoundPlayer.addEventListener('FinishedPlaying', () => {
+  //   setIsPlaying(false); // Reset the playing state when audio finishes playing
+  //   dispatch(clearPlaying(newAudioUrl));
+  //   });
+  //  await SoundPlayer.playUrl(newAudioUrl); // Play the new audio
+  //   const audio = await SoundPlayer.getInfo();
+  //   setTotalDuration(audio?.duration);
+  //   } catch (error) {
+  //   console.log('Oops! An error occurred while playing audio:', error);
+  //   }
+  //   }
+  //  };
+
+  const onStopRecord = async () => {
+    const result = await audioRecorderPlayer.stopRecorder();
+    audioRecorderPlayer.removeRecordBackListener();
+    setRecordSecs(0);
+    prepRecording();
+    console.log(result);
+  };
+
+  const onDeleteRecord = async () => {
+    const result = await audioRecorderPlayer.stopRecorder();
+    audioRecorderPlayer.removeRecordBackListener();
+    setRecordSecs(0);
+    setAudioPath('');
+    console.log(result);
+  };
+
+  const onStartPlay = async () => {
+    console.log('onStartPlay');
+    const msg = await audioRecorderPlayer.startPlayer();
+    console.log(msg);
+    audioRecorderPlayer.addPlayBackListener(e => {
+      setCurrentDurationSec(e.duration);
+      setCurrentPositionSec(e.currentPosition);
+      setPlayTime(audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)));
+      setDuration(audioRecorderPlayer.mmssss(Math.floor(e.duration)));
+
+      return;
+    });
+  };
+
+  const onPausePlay = async () => {
+    await audioRecorderPlayer.pausePlayer();
+  };
+
+  const onStopPlay = async () => {
+    console.log('onStopPlay');
+    audioRecorderPlayer.stopPlayer();
+    audioRecorderPlayer.removePlayBackListener();
+  };
+
   const userProfile = () => {
     return (
       <View
@@ -162,6 +308,21 @@ const Messaging = ({route}: any) => {
     }
   };
 
+  const handleSendAudio = async () => {
+    try {
+      socket.emit('sendAudio', {
+        chatId: item.chat_id,
+        audioData: audioBase,
+        senderId: userId,
+        receiverId: item.receiver_id,
+        offset,
+      });
+    } catch (error) {
+      console.error('Error sending audio:', error);
+      Alert.alert('Error', 'Failed to send audio');
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
@@ -196,20 +357,61 @@ const Messaging = ({route}: any) => {
         </TouchableOpacity>
       )}
       <SafeAreaView style={styles.messaginginputContainer}>
-        <View style={styles.messaginginputContainerInner}>
-          <Image source={images.user} style={styles.avtar} />
-          <TextInput
-            style={styles.messaginginput}
-            value={message}
-            placeholder={t('writeYourComment')}
-            onChangeText={value => setMessage(value)}
-          />
-          <Pressable
-            style={styles.messagingbuttonContainer}
-            onPress={handleNewMessage}>
-            <Image source={images.send} style={styles.sendImage} />
-          </Pressable>
-        </View>
+        {audioPath == '' && (
+          <View style={styles.messaginginputContainerInner}>
+            <Image source={images.user} style={styles.avtar} />
+            <TextInput
+              style={styles.messaginginput}
+              value={message}
+              placeholder={t('writeYourComment')}
+              onChangeText={value => setMessage(value)}
+            />
+            <Pressable
+              style={styles.messagingbuttonContainer}
+              onPress={handleNewMessage}>
+              <Image source={images.send} style={styles.sendImage} />
+            </Pressable>
+          </View>
+        )}
+        {audioPath == '' && (
+          <View style={styles.extraOptions}>
+            <TouchableOpacity onPress={() => onStartRecord()}>
+              <Image source={images.mic} style={styles.micImage} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onStopRecord()}>
+              <Image source={images.emoji} style={styles.micImage} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onStartPlay()}>
+              <Image source={images.videoPhoto} style={styles.videoPhoto} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onStopPlay()}>
+              <Image source={images.gif} style={styles.micImage} />
+            </TouchableOpacity>
+          </View>
+        )}
+        {audioPath != '' && (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-around',
+              marginTop: 20,
+            }}>
+            <Text style={styles.recordTime}>{recordTime?.substring(0, 5)}</Text>
+            <TouchableOpacity onPress={() => onDeleteRecord()}>
+              <Image source={images.trash} style={styles.trashImage} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onStopRecord()}>
+              <Text>Stop</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleSendAudio}>
+              <Image
+                source={images.send}
+                style={{width: 20, height: 20, resizeMode: 'contain'}}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

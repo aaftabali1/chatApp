@@ -2,11 +2,13 @@ const express = require("express");
 const database = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoute");
+const fs = require("fs");
 const app = express();
 const PORT = 4000;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.static(__dirname + "/"));
 
 const http = require("http").Server(app);
 const cors = require("cors");
@@ -229,6 +231,75 @@ socketIO.on("connection", (socket) => {
       socket.to(receiverUser[0].socket).emit("allMessageList", chatsSender);
     }
   });
+
+  socket.on(
+    "sendAudio",
+    async ({ audioData, chatId, senderId, receiverId, offset }) => {
+      const rand = Math.floor(Math.random() * 99999999) + 1;
+      const filePath = `${__dirname}/audios/${senderId + chatId + rand}.aac`;
+      const senderUser = await db.getUserById({ userId: senderId });
+      const receiverUser = await db.getUserById({ userId: receiverId });
+      convertBase64ToAudio(audioData, filePath)
+        .then(async (filePath) => {
+          if (filePath) {
+            const messageData = await db.insertMessage({
+              message: "",
+              read: false,
+              chatId,
+              senderId,
+              receiverId: "",
+            });
+            await db.addAudio({
+              messageId: messageData.insertId,
+              audioUrl: `${senderId + chatId + rand}.aac`,
+            });
+            const chatsReceiver = await db.getAllMessagesByUsername({
+              userId: receiverUser[0].user_id,
+            });
+            const chatsSender = await db.getAllMessagesByUsername({
+              userId: senderUser[0].user_id,
+            });
+            const allMessages = await db.getUserMessages({
+              chatId: chatId,
+              offset,
+            });
+            socket.emit("getNewMessage", allMessages);
+            socket.emit("allMessageList", chatsReceiver);
+            socket
+              .to(receiverUser[0].socket)
+              .emit("getNewMessage", allMessages);
+            socket
+              .to(receiverUser[0].socket)
+              .emit("allMessageList", chatsReceiver);
+            socket.to(senderUser[0].socket).emit("getNewMessage", allMessages);
+            socket.to(senderUser[0].socket).emit("allMessageList", chatsSender);
+          } else {
+            console.error("Failed to save audio file");
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+
+      // socket.emit("");
+    }
+  );
+
+  const convertBase64ToAudio = async (base64Data, filePath) => {
+    try {
+      // Remove the data URI prefix if present
+      const base64Content = base64Data.split(",")[1];
+      // Convert the Base64 string to a buffer
+      const buffer = Buffer.from(base64Content, "base64");
+      // Write the buffer to a file
+      await fs.promises.writeFile(filePath, buffer, "base64");
+      console.log("Audio file saved successfully:", filePath);
+      return filePath;
+    } catch (error) {
+      console.error("Error converting Base64 to audio:", error);
+      return null;
+    }
+  };
 
   socket.on("getMessages", async (userId) => {
     const chats = await db.getAllMessagesByUsername({

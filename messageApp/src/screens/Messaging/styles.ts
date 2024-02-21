@@ -90,7 +90,7 @@ export default StyleSheet.create({
     backgroundColor: colors.primaryBlue,
     position: 'absolute',
     right: 10,
-    bottom: 100,
+    bottom: 140,
     zIndex: 12,
     paddingVertical: 10,
     paddingHorizontal: 13,
@@ -98,5 +98,32 @@ export default StyleSheet.create({
   },
   downArrowImg: {
     color: colors.white,
+  },
+  extraOptions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    marginTop: 10,
+  },
+  micImage: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+  },
+  videoPhoto: {
+    width: 51,
+    height: 36,
+    resizeMode: 'contain',
+  },
+  recordTime: {
+    color: colors.textColor,
+    fontSize: 16,
+  },
+  trashImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+    tintColor: colors.orange,
+    marginStart: -10,
   },
 });

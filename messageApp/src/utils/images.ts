@@ -40,4 +40,10 @@ export default {
   note: require('../assets/images/note.png'),
   group: require('../assets/images/group.png'),
   chevronRight: require('../assets/images/chevron-right.png'),
+  mic: require('../assets/images/mic.png'),
+  emoji: require('../assets/images/emoji.png'),
+  videoPhoto: require('../assets/images/video-photo.png'),
+  gif: require('../assets/images/gif.png'),
+  play: require('../assets/images/play.png'),
+  pause: require('../assets/images/pause.png'),
 };

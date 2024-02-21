@@ -73,6 +73,8 @@ PODS:
   - hermes-engine/Pre-built (0.73.1)
   - JitsiWebRTC (118.0.0)
   - libevent (2.1.12)
+  - OGReactNativeWaveform (2.0.5):
+    - React
   - OpenSSL-Universal (1.1.1100)
   - RCT-Folly (2022.05.16.00):
     - boost
@@ -949,6 +951,9 @@ PODS:
     - React
   - react-native-safe-area-context (4.8.2):
     - React-Core
+  - react-native-track-player (4.0.1):
+    - React-Core
+    - SwiftAudioEx (= 1.0.0)
   - react-native-webrtc (118.0.1):
     - JitsiWebRTC (~> 118.0.0)
     - React-Core
@@ -1121,9 +1126,15 @@ PODS:
     - React-perflogger (= 0.73.1)
   - ReactNativeIncallManager (4.1.0):
     - React-Core
+  - rn-fetch-blob (0.12.0):
+    - React-Core
+  - RNAudioRecorderPlayer (3.6.6):
+    - React-Core
   - RNCAsyncStorage (1.21.0):
     - React-Core
   - RNFlashList (1.6.3):
+    - React-Core
+  - RNFS (2.20.0):
     - React-Core
   - RNLocalize (3.0.5):
     - React-Core
@@ -1136,11 +1147,14 @@ PODS:
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
+  - RNSVG (14.1.0):
+    - React-Core
   - RNVectorIcons (10.0.3):
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
   - SocketRocket (0.6.1)
+  - SwiftAudioEx (1.0.0)
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -1171,6 +1185,7 @@ DEPENDENCIES:
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - libevent (~> 2.1.12)
+  - OGReactNativeWaveform (from `../node_modules/react-native-audiowaveform`)
   - OpenSSL-Universal (= 1.1.1100)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCT-Folly/Fabric (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
@@ -1198,6 +1213,7 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - react-native-network-info (from `../node_modules/react-native-network-info`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - react-native-track-player (from `../node_modules/react-native-track-player`)
   - react-native-webrtc (from `../node_modules/react-native-webrtc`)
   - React-nativeconfig (from `../node_modules/react-native/ReactCommon`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -1220,11 +1236,15 @@ DEPENDENCIES:
   - React-utils (from `../node_modules/react-native/ReactCommon/react/utils`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - ReactNativeIncallManager (from `../node_modules/react-native-incall-manager`)
+  - rn-fetch-blob (from `../node_modules/rn-fetch-blob`)
+  - RNAudioRecorderPlayer (from `../node_modules/react-native-audio-recorder-player`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNFlashList (from `../node_modules/@shopify/flash-list`)"
+  - RNFS (from `../node_modules/react-native-fs`)
   - RNLocalize (from `../node_modules/react-native-localize`)
   - "RNNotifee (from `../node_modules/@notifee/react-native`)"
   - RNScreens (from `../node_modules/react-native-screens`)
+  - RNSVG (from `../node_modules/react-native-svg`)
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -1244,6 +1264,7 @@ SPEC REPOS:
     - libevent
     - OpenSSL-Universal
     - SocketRocket
+    - SwiftAudioEx
 
 EXTERNAL SOURCES:
   boost:
@@ -1259,6 +1280,8 @@ EXTERNAL SOURCES:
   hermes-engine:
     :podspec: "../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
     :tag: hermes-2023-11-17-RNv0.73.0-21043a3fc062be445e56a2c10ecd8be028dd9cc5
+  OGReactNativeWaveform:
+    :path: "../node_modules/react-native-audiowaveform"
   RCT-Folly:
     :podspec: "../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec"
   RCTRequired:
@@ -1305,6 +1328,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-network-info"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
+  react-native-track-player:
+    :path: "../node_modules/react-native-track-player"
   react-native-webrtc:
     :path: "../node_modules/react-native-webrtc"
   React-nativeconfig:
@@ -1349,16 +1374,24 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   ReactNativeIncallManager:
     :path: "../node_modules/react-native-incall-manager"
+  rn-fetch-blob:
+    :path: "../node_modules/rn-fetch-blob"
+  RNAudioRecorderPlayer:
+    :path: "../node_modules/react-native-audio-recorder-player"
   RNCAsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   RNFlashList:
     :path: "../node_modules/@shopify/flash-list"
+  RNFS:
+    :path: "../node_modules/react-native-fs"
   RNLocalize:
     :path: "../node_modules/react-native-localize"
   RNNotifee:
     :path: "../node_modules/@notifee/react-native"
   RNScreens:
     :path: "../node_modules/react-native-screens"
+  RNSVG:
+    :path: "../node_modules/react-native-svg"
   RNVectorIcons:
     :path: "../node_modules/react-native-vector-icons"
   Yoga:
@@ -1383,6 +1416,7 @@ SPEC CHECKSUMS:
   hermes-engine: 34df9d5034e90bd9bf1505e1ca198760373935af
   JitsiWebRTC: 3a41671ef65a51d7204323814b055a2690b921c7
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
+  OGReactNativeWaveform: f789fabadbf3904c7cba84d183405395861b8fed
   OpenSSL-Universal: ebc357f1e6bc71fa463ccb2fe676756aff50e88c
   RCT-Folly: 7169b2b1c44399c76a47b5deaaba715eeeb476c0
   RCTRequired: 6dda55e483f75d2b43781d8ad5bd7df276a50981
@@ -1407,6 +1441,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 9731a0a63ebaf8976014623c4d637744d7353a7c
   react-native-network-info: d1290ffc0bd0709e11436f5b8d7f605dcc5c4530
   react-native-safe-area-context: 0ee144a6170530ccc37a0fd9388e28d06f516a89
+  react-native-track-player: 97d76dbbd35f27cc709e5f04540615e54264b3f9
   react-native-webrtc: 7adbde4b2ad20fb2b804fb11f329425c9323dccc
   React-nativeconfig: 37aecd26d64b79327c3f10e43b2e9a6c425e0a60
   React-NativeModulesApple: 9ca6d2eaa1dd5606588262195b46d0774bdec83a
@@ -1429,13 +1464,18 @@ SPEC CHECKSUMS:
   React-utils: debda2c206770ee2785bdebb7f16d8db9f18838a
   ReactCommon: ddb128564dcbfa0287d3d1a2d10f8c7457c971f6
   ReactNativeIncallManager: 2385505fa5dfdbbc78925e3b8d23b30ce0cde40e
+  rn-fetch-blob: f065bb7ab7fb48dd002629f8bdcb0336602d3cba
+  RNAudioRecorderPlayer: f790fc1afb118552ae6285d60adde52ee6b5d9ef
   RNCAsyncStorage: 618d03a5f52fbccb3d7010076bc54712844c18ef
   RNFlashList: 4b4b6b093afc0df60ae08f9cbf6ccd4c836c667a
+  RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
   RNLocalize: a725877f311db45acc6bff2382b3283e744a3945
   RNNotifee: 8e2d3df3f0e9ce8f5d1fe4c967431138190b6175
   RNScreens: b582cb834dc4133307562e930e8fa914b8c04ef2
+  RNSVG: ba3e7232f45e34b7b47e74472386cf4e1a676d0a
   RNVectorIcons: 210f910e834e3485af40693ad4615c1ec22fc02b
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
+  SwiftAudioEx: 6f511018b7a0fdfd14ed1bb4081f953588245cc0
   Yoga: 4f53dc50008d626fa679c7a1cb4bed898f8c0bde
 
 PODFILE CHECKSUM: 373089a18436f54e728461a04fbcf3ae6f710f29
