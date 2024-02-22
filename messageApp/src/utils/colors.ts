@@ -14,4 +14,7 @@ export default {
   blueTransparent: 'rgba(42,35,192,0.1)',
   offWhite: '#F4F4F9',
   messageBg: 'rgb(194, 243, 194)',
+  senderBg: '#f5ccc2',
+  transparent: 'transparent',
+  red: '#FF0000',
 };

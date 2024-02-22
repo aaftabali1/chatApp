@@ -37,6 +37,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     paddingTop: 10,
     alignItems: 'center',
+    minHeight: 50,
   },
   sendImage: {
     width: 20,
@@ -118,6 +119,7 @@ export default StyleSheet.create({
   recordTime: {
     color: colors.textColor,
     fontSize: 16,
+    marginStart: 20,
   },
   trashImage: {
     width: 30,
@@ -125,5 +127,49 @@ export default StyleSheet.create({
     resizeMode: 'contain',
     tintColor: colors.orange,
     marginStart: -10,
+  },
+  closeIconContainer: {
+    backgroundColor: colors.blueLight,
+    borderRadius: 200,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeIcon: {
+    width: 10,
+    height: 10,
+    resizeMode: 'contain',
+    tintColor: colors.white,
+  },
+  playIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+    position: 'absolute',
+    zIndex: 10,
+    top: 10,
+    left: 15,
+    tintColor: colors.blueLight,
+  },
+  waveform: {
+    flex: 1,
+    margin: 10,
+    backgroundColor: colors.transparent,
+    marginLeft: 40,
+  },
+  waveformContainer: {
+    backgroundColor: colors.white,
+    minHeight: 40,
+    borderRadius: 200,
+    flex: 1,
+    marginHorizontal: 10,
+    justifyContent: 'center',
+  },
+  stopImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+    tintColor: colors.red,
   },
 });

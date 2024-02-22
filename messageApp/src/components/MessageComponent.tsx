@@ -29,14 +29,18 @@ export default function MessageComponent({item, user}: any) {
               style={
                 status
                   ? styles.mmessage
-                  : [styles.mmessage, {backgroundColor: 'rgb(194, 243, 194)'}]
+                  : [styles.mmessage, {backgroundColor: colors.messageBg}]
               }>
               <Text>{item.content}</Text>
             </View>
           </View>
         ) : (
           <View>
-            <View style={styles.waveformContainer}>
+            <View
+              style={[
+                styles.waveformContainer,
+                !status && {backgroundColor: colors.messageBg},
+              ]}>
               <TouchableOpacity onPress={() => setIsPlaying(prev => !prev)}>
                 <Image
                   source={isPlaying ? images.pause : images.play}
@@ -46,7 +50,7 @@ export default function MessageComponent({item, user}: any) {
               <WaveForm
                 play={isPlaying}
                 autoPlay={false}
-                style={styles.waveform}
+                style={[styles.waveform]}
                 waveFormStyle={{
                   waveColor: colors.blueLight,
                   scrubColor: colors.primaryBlue,

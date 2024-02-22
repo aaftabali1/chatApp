@@ -296,8 +296,8 @@ class db {
         const query = `SELECT m.message_id, m.chat_id, m.sender_id, m.content, m.date
         FROM ${messagesTable} m
         JOIN ${participantsTable} uc ON m.chat_id = uc.chat_id
-        WHERE uc.user_id = ? AND m.is_read = 0 AND m.sender_id != uc.user_id;`;
-        connection.query(query, [userId], (err, results) => {
+        WHERE uc.user_id = ? AND m.is_read = 0 AND m.sender_id != uc.user_id AND m.chat_id = ?;`;
+        connection.query(query, [userId, chatId], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);
         });

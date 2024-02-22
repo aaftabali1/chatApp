@@ -205,11 +205,11 @@ export const styles = StyleSheet.create({
   waveform: {
     flex: 1,
     margin: 10,
-    backgroundColor: colors.messageBg,
+    backgroundColor: colors.transparent,
     marginLeft: 40,
   },
   waveformContainer: {
-    backgroundColor: colors.messageBg,
+    backgroundColor: colors.senderBg,
     minHeight: 60,
     borderRadius: 10,
     minWidth: 200,

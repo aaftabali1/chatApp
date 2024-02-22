@@ -35,7 +35,10 @@ import AudioRecorderPlayer, {
   AudioSourceAndroidType,
 } from 'react-native-audio-recorder-player';
 import RNFS from 'react-native-fs';
-import RNFetchBlob from 'rn-fetch-blob';
+import WaveForm from 'react-native-audiowaveform';
+import colors from '../../utils/colors';
+
+const audioRecorderPlayer = new AudioRecorderPlayer();
 
 const Messaging = ({route}: any) => {
   const {t} = useTranslation();
@@ -45,7 +48,6 @@ const Messaging = ({route}: any) => {
   const navigation = useNavigation<NavigationProp<any>>();
   const flatListRef = useRef<any>();
 
-  const [audioRecorderPlayer] = useState(new AudioRecorderPlayer());
   const [recordTime, setRecordTime] = useState<any>();
   const [recordSecs, setRecordSecs] = useState<any>();
   const [currentPositionSec, setCurrentPositionSec] = useState<any>();
@@ -59,6 +61,8 @@ const Messaging = ({route}: any) => {
   const [audioFile, setAudioFile] = useState<any>('');
   const [audioPath, setAudioPath] = useState('');
   const [audioBase, setAudioBase] = useState<any>('');
+  const [audioRecording, setAudioRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({title: item.receiver_name});
@@ -102,7 +106,26 @@ const Messaging = ({route}: any) => {
   // marking message as read when user open screen
   useEffect(() => {
     markMessagesRead();
+
+    return () => {
+      audioRecorderPlayer.removePlayBackListener();
+      audioRecorderPlayer.removeRecordBackListener();
+    };
   }, []);
+
+  const generateRandomWaveform = () => {
+    const numPoints = 100;
+    const scaleFactor = 40 / 2; // Scale factor for the analog waveform
+    const analogWave = [];
+    for (let i = 0; i < numPoints; i++) {
+      const x = i * 10;
+      const y =
+        20 +
+        Math.sin((x / 100) * Math.PI * 2 + Date.now() / 1000) * scaleFactor;
+      analogWave.push(`${x},${y}`);
+    }
+    return analogWave;
+  };
 
   // handling socket response
   useEffect(() => {
@@ -130,9 +153,6 @@ const Messaging = ({route}: any) => {
   };
 
   const onStartRecord = async () => {
-    const path = `${RNFS.DocumentDirectoryPath}/recording-${Math.random()
-      .toString(36)
-      .substring(2, 5)}.aac`;
     const audioSet = {
       AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
       AudioSourceAndroid: AudioSourceAndroidType.MIC,
@@ -150,6 +170,9 @@ const Messaging = ({route}: any) => {
         audioSet,
         meteringEnabled,
       );
+      setRecordTime('00:00:00');
+      setRecordSecs(0);
+      setAudioRecording(true);
       audioRecorderPlayer.addRecordBackListener(e => {
         setRecordTime(
           audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)),
@@ -223,6 +246,7 @@ const Messaging = ({route}: any) => {
     audioRecorderPlayer.removeRecordBackListener();
     setRecordSecs(0);
     prepRecording();
+    setAudioRecording(false);
     console.log(result);
   };
 
@@ -309,6 +333,7 @@ const Messaging = ({route}: any) => {
   };
 
   const handleSendAudio = async () => {
+    onDeleteRecord();
     try {
       socket.emit('sendAudio', {
         chatId: item.chat_id,
@@ -390,27 +415,75 @@ const Messaging = ({route}: any) => {
           </View>
         )}
         {audioPath != '' && (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-around',
-              marginTop: 20,
-            }}>
-            <Text style={styles.recordTime}>{recordTime?.substring(0, 5)}</Text>
-            <TouchableOpacity onPress={() => onDeleteRecord()}>
-              <Image source={images.trash} style={styles.trashImage} />
+          <View style={styles.messaginginputContainerInner}>
+            <TouchableOpacity
+              onPress={onDeleteRecord}
+              style={styles.closeIconContainer}>
+              <Image source={images.close} style={styles.closeIcon} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => onStopRecord()}>
-              <Text>Stop</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSendAudio}>
-              <Image
-                source={images.send}
-                style={{width: 20, height: 20, resizeMode: 'contain'}}
-              />
-            </TouchableOpacity>
+
+            {!audioRecording ? (
+              <View style={[styles.waveformContainer]}>
+                <TouchableOpacity onPress={() => setIsPlaying(prev => !prev)}>
+                  <Image
+                    source={isPlaying ? images.pause : images.play}
+                    style={styles.playIcon}
+                  />
+                </TouchableOpacity>
+                <WaveForm
+                  onFinishPlay={() => setIsPlaying(false)}
+                  play={isPlaying}
+                  autoPlay={false}
+                  style={[styles.waveform]}
+                  waveFormStyle={{
+                    waveColor: colors.blueLight,
+                    scrubColor: colors.primaryBlue,
+                  }}
+                  source={{
+                    uri: audioPath,
+                  }}
+                />
+              </View>
+            ) : (
+              <View style={{flex: 1}}>
+                <Text style={styles.recordTime}>
+                  {recordTime?.substring(0, 5)}
+                </Text>
+              </View>
+            )}
+            {audioRecording ? (
+              <TouchableOpacity onPress={onStopRecord}>
+                <Image source={images.stop} style={styles.stopImage} />
+              </TouchableOpacity>
+            ) : (
+              <Pressable
+                style={styles.messagingbuttonContainer}
+                onPress={handleSendAudio}>
+                <Image source={images.send} style={styles.sendImage} />
+              </Pressable>
+            )}
           </View>
+          // <View
+          //   style={{
+          //     flexDirection: 'row',
+          //     alignItems: 'center',
+          //     justifyContent: 'space-around',
+          //     marginTop: 20,
+          //   }}>
+          //   <Text style={styles.recordTime}>{recordTime?.substring(0, 5)}</Text>
+          //   <TouchableOpacity onPress={() => onDeleteRecord()}>
+          //     <Image source={images.trash} style={styles.trashImage} />
+          //   </TouchableOpacity>
+          //   <TouchableOpacity onPress={() => onStopRecord()}>
+          //     <Text>Stop</Text>
+          //   </TouchableOpacity>
+          //   <TouchableOpacity onPress={handleSendAudio}>
+          //     <Image
+          //       source={images.send}
+          //       style={{width: 20, height: 20, resizeMode: 'contain'}}
+          //     />
+          //   </TouchableOpacity>
+          // </View>
         )}
       </SafeAreaView>
     </KeyboardAvoidingView>

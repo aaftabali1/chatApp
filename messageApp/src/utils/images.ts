@@ -46,4 +46,6 @@ export default {
   gif: require('../assets/images/gif.png'),
   play: require('../assets/images/play.png'),
   pause: require('../assets/images/pause.png'),
+  close: require('../assets/images/close.png'),
+  stop: require('../assets/images/stop.png'),
 };
