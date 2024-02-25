@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
   FlatList,
@@ -29,7 +29,13 @@ import ChatFilter from '../../components/ChatFilter';
 import ChatAction from '../../components/ChatAction';
 import SuccessModel from '../../components/Success';
 import TwoBtnAlert from '../../components/TwoBtnAlert';
-import {fetchChats, pinChat, unPinChat} from '../../redux/slices/chatsSlice';
+import {
+  archiveChat,
+  fetchChats,
+  pinChat,
+  unPinChat,
+} from '../../redux/slices/chatsSlice';
+import constants from '../../utils/constants';
 
 const Chat = () => {
   const {t} = useTranslation();
@@ -38,7 +44,9 @@ const Chat = () => {
   const username = useSelector(selectUsername);
   const userId = useSelector(selectUserId);
 
+  const chatsReducer = useSelector((state: any) => state.chats);
   const chats = useSelector((state: any) => state.chats.chats);
+  const prevChatsReducer = useRef<any>(null);
 
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -55,6 +63,7 @@ const Chat = () => {
   const [showDeleteMessageModal, setShowDeleteMessageModal] = useState(false);
   const [showDeleteMessageSuccessModal, setShowDeleteMessageSuccessModal] =
     useState(false);
+  const [actionChatId, setActionChatId] = useState(0);
 
   useEffect(() => {
     getUsername();
@@ -101,13 +110,10 @@ const Chat = () => {
     updateUser(username);
   }, [username, dispatch, userId]);
 
-  const messageListCallback = useCallback(
-    async (messagesList: any) => {
-      setMessages(messagesList);
-      // getUsername();
-    },
-    [socket],
-  );
+  const messageListCallback = useCallback(async () => {
+    getMessages();
+    // getUsername();
+  }, [socket, getMessages]);
 
   useEffect(() => {
     socket.on('allMessageList', messageListCallback);
@@ -168,10 +174,45 @@ const Chat = () => {
 
   const handlePinChat = ({chatId}: {chatId: string}) => {
     dispatch(pinChat({chatId, userId}));
-    // setShowMessagePinnedModal(true);
-    //                   setTimeout(() => {
-    //                     setShowMessagePinnedModal(false);
-    //                   }, 2000);
+  };
+
+  useEffect(() => {
+    if (prevChatsReducer.current !== null) {
+      if (
+        prevChatsReducer.current?.archiveChatLoading == true &&
+        chatsReducer.archiveChatLoading == false
+      ) {
+        setShowArchiveSuccessModal(true);
+        setShowArchiveModal(false);
+        setTimeout(() => {
+          setShowArchiveSuccessModal(false);
+        }, 2000);
+      }
+    }
+    prevChatsReducer.current = chatsReducer;
+  }, [chatsReducer.archiveChatLoading]);
+
+  const handleArchiveChat = () => {
+    dispatch(archiveChat({chatId: actionChatId, userId}));
+  };
+
+  const allMessages = () => {
+    let allMessage = messages.filter(
+      (item: any) => item?.pinned != 1 && item?.archived != 1,
+    );
+
+    if (filterValue == 1) {
+      allMessage = messages.filter(
+        (item: any) => item?.archived == 1 && item?.pinned != 1,
+      );
+    }
+    if (filterValue == 2) {
+      allMessage = messages.filter(
+        (item: any) => item?.archived != 1 && item?.unreadCount > 0,
+      );
+    }
+
+    return allMessage;
   };
 
   return (
@@ -188,7 +229,9 @@ const Chat = () => {
       </View>
 
       {messages?.length > 0 &&
-        messages.filter((item: any) => item?.pinned != null)?.length > 0 && (
+        messages.filter(
+          (item: any) => item?.pinned != null && item?.pinned != 0,
+        )?.length > 0 && (
           <View style={styles.pinnedOuter}>
             <Text style={globalStyles.regularText14}>
               {t('pinnedConversations')}
@@ -213,7 +256,7 @@ const Chat = () => {
       <View style={styles.chatlistContainer}>
         {messages.length > 0 ? (
           <SwipeListView
-            data={messages.filter((item: any) => item?.pinned == null)}
+            data={allMessages()}
             renderItem={({item}) => {
               return (
                 <ChatComponent
@@ -237,6 +280,7 @@ const Chat = () => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
+                      setActionChatId(data.item.chat_id);
                       setShowArchiveModal(true);
                     }}
                     style={styles.rightSecondItem}>
@@ -314,15 +358,15 @@ const Chat = () => {
       />
       {showArchiveModal && (
         <TwoBtnAlert
-          descText={t('archiveChatModalTitle')}
+          descText={t('archiveChatModalTitle').replace(
+            '{name}',
+            messages.find((item: any) => item.chat_id == actionChatId)
+              ?.receiver_name,
+          )}
           okText={t('archiveConversation')}
           cancelText={t('cancel')}
           okAction={() => {
-            setShowArchiveSuccessModal(true);
-            setShowArchiveModal(false);
-            setTimeout(() => {
-              setShowArchiveSuccessModal(false);
-            }, 2000);
+            handleArchiveChat();
           }}
           secondaryDesc={t('archiveChatModalDescription')}
           cancelAction={() => {

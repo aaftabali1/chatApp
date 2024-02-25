@@ -3,4 +3,9 @@ export default {
   incomingCall: 'INCOMING_CALL',
   outgoingCall: 'OUTGOING_CALL',
   webRTC: 'WEBRTC',
+  archiveFilter: 'archive',
+  allFilter: 'all',
+  unreadFilter: 'unread',
+  mutedFilter: 'muted',
+  contactFilter: 'contact',
 };

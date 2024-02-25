@@ -10,6 +10,8 @@ interface ChatsState {
   pinError: string | undefined | null;
   unPinLoading: boolean;
   unPinError: string | undefined | null;
+  archiveChatLoading: boolean;
+  archiveChatError: string | undefined | null;
 }
 
 const initialState: ChatsState = {
@@ -20,6 +22,8 @@ const initialState: ChatsState = {
   pinError: null,
   unPinLoading: false,
   unPinError: null,
+  archiveChatLoading: false,
+  archiveChatError: null,
 };
 
 export const fetchChats = createAsyncThunk(
@@ -41,6 +45,15 @@ export const unPinChat = createAsyncThunk(
   'chats/unPinChat',
   async (datas: any) => {
     const res = await axios.post(constants.ip + '/chats/unpin-chat', datas);
+    const data = await res.data;
+    return data;
+  },
+);
+
+export const archiveChat = createAsyncThunk(
+  'chats/archiveChat',
+  async (datas: any) => {
+    const res = await axios.post(constants.ip + '/chats/archive-chat', datas);
     const data = await res.data;
     return data;
   },
@@ -86,6 +99,18 @@ const chatsSlice = createSlice({
     builder.addCase(unPinChat.rejected, (state, action) => {
       state.unPinLoading = false;
       state.unPinError = action.error.message;
+    });
+    builder.addCase(archiveChat.pending, state => {
+      state.archiveChatLoading = true;
+      state.archiveChatError = null;
+    });
+    builder.addCase(archiveChat.fulfilled, (state, action) => {
+      state.archiveChatLoading = false;
+      state.chats = action.payload;
+    });
+    builder.addCase(archiveChat.rejected, (state, action) => {
+      state.archiveChatLoading = false;
+      state.archiveChatError = action.error.message;
     });
   },
 });

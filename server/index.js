@@ -21,18 +21,18 @@ app.use("/chats", chatRoutes);
 
 const db = database.getDbServiceInstance();
 
-app.get("/api/chats", async (req, res) => {
-  try {
-    const chats = await db.getAllMessagesByUsername({
-      userId: req.query.username,
-    });
+// app.get("/api/chats", async (req, res) => {
+//   try {
+//     const chats = await db.getAllMessagesByUsername({
+//       userId: req.query.username,
+//     });
 
-    res.json(chats);
-  } catch (e) {
-    console.log("Error", e);
-    res.json([]);
-  }
-});
+//     res.json(chats);
+//   } catch (e) {
+//     console.log("Error", e);
+//     res.json([]);
+//   }
+// });
 
 app.get("/api/calls", async (req, res) => {
   try {
@@ -219,16 +219,10 @@ socketIO.on("connection", (socket) => {
         senderId: senderId,
         receiverId: receiverUser[0].user_id,
       });
-      const chatsReceiver = await db.getAllMessagesByUsername({
-        userId: receiverUser[0].user_id,
-      });
-      const chatsSender = await db.getAllMessagesByUsername({
-        userId: senderId,
-      });
       socket.join(receiverUser[0].socket);
-      socket.emit("allMessageList", chatsReceiver);
+      socket.emit("allMessageList");
 
-      socket.to(receiverUser[0].socket).emit("allMessageList", chatsSender);
+      socket.to(receiverUser[0].socket).emit("allMessageList");
     }
   });
 
@@ -253,26 +247,18 @@ socketIO.on("connection", (socket) => {
               messageId: messageData.insertId,
               audioUrl: `${senderId + chatId + rand}.aac`,
             });
-            const chatsReceiver = await db.getAllMessagesByUsername({
-              userId: receiverUser[0].user_id,
-            });
-            const chatsSender = await db.getAllMessagesByUsername({
-              userId: senderUser[0].user_id,
-            });
             const allMessages = await db.getUserMessages({
               chatId: chatId,
               offset,
             });
             socket.emit("getNewMessage", allMessages);
-            socket.emit("allMessageList", chatsReceiver);
+            socket.emit("allMessageList");
             socket
               .to(receiverUser[0].socket)
               .emit("getNewMessage", allMessages);
-            socket
-              .to(receiverUser[0].socket)
-              .emit("allMessageList", chatsReceiver);
+            socket.to(receiverUser[0].socket).emit("allMessageList");
             socket.to(senderUser[0].socket).emit("getNewMessage", allMessages);
-            socket.to(senderUser[0].socket).emit("allMessageList", chatsSender);
+            socket.to(senderUser[0].socket).emit("allMessageList");
           } else {
             console.error("Failed to save audio file");
           }
@@ -300,14 +286,6 @@ socketIO.on("connection", (socket) => {
       return null;
     }
   };
-
-  socket.on("getMessages", async (userId) => {
-    const chats = await db.getAllMessagesByUsername({
-      userId: userId,
-    });
-
-    socket.emit("allMessageList", chats);
-  });
 
   socket.on("disconnect", () => {
     socket.disconnect();
@@ -349,27 +327,21 @@ socketIO.on("connection", (socket) => {
       const senderData = await db.getUser({ username: sender });
       const allMessages = await db.getUserMessages({ chatId: chat_id, offset });
 
-      const chatsReceiver = await db.getAllMessagesByUsername({
-        userId: receiverData[0].user_id,
-      });
       socket.to(receiverData[0].socket).emit("newMessage", {
         title: sender,
         message,
       });
 
       socket.emit("getNewMessage", allMessages);
-      socket.emit("allMessageList", chatsReceiver);
+      socket.emit("allMessageList", "");
 
       if (receiverData.length > 0) {
         socket.to(receiverData[0].socket).emit("getNewMessage", allMessages);
-        socket.to(receiverData[0].socket).emit("allMessageList", chatsReceiver);
+        socket.to(receiverData[0].socket).emit("allMessageList", "");
       }
       if (senderData.length > 0) {
-        const chatsSender = await db.getAllMessagesByUsername({
-          userId: sender,
-        });
         socket.to(senderData[0].socket).emit("getNewMessage", allMessages);
-        socket.to(senderData[0].socket).emit("allMessageList", chatsSender);
+        socket.to(senderData[0].socket).emit("allMessageList", "");
       }
     } catch (e) {
       console.log("Error in sending message", e);

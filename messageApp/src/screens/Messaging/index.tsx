@@ -49,11 +49,6 @@ const Messaging = ({route}: any) => {
   const flatListRef = useRef<any>();
 
   const [recordTime, setRecordTime] = useState<any>();
-  const [recordSecs, setRecordSecs] = useState<any>();
-  const [currentPositionSec, setCurrentPositionSec] = useState<any>();
-  const [currentDurationSec, setCurrentDurationSec] = useState<any>();
-  const [playTime, setPlayTime] = useState<any>();
-  const [duration, setDuration] = useState<any>();
   const [chatMessages, setChatMessages] = useState<any>([]);
   const [message, setMessage] = useState('');
   const [offset, setOffset] = useState(0);
@@ -171,13 +166,11 @@ const Messaging = ({route}: any) => {
         meteringEnabled,
       );
       setRecordTime('00:00:00');
-      setRecordSecs(0);
       setAudioRecording(true);
       audioRecorderPlayer.addRecordBackListener(e => {
         setRecordTime(
           audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)),
         );
-        setRecordSecs(e.currentPosition);
         return;
       });
       setAudioPath(uri);
@@ -244,7 +237,6 @@ const Messaging = ({route}: any) => {
   const onStopRecord = async () => {
     const result = await audioRecorderPlayer.stopRecorder();
     audioRecorderPlayer.removeRecordBackListener();
-    setRecordSecs(0);
     prepRecording();
     setAudioRecording(false);
     console.log(result);
@@ -253,7 +245,6 @@ const Messaging = ({route}: any) => {
   const onDeleteRecord = async () => {
     const result = await audioRecorderPlayer.stopRecorder();
     audioRecorderPlayer.removeRecordBackListener();
-    setRecordSecs(0);
     setAudioPath('');
     console.log(result);
   };
@@ -263,17 +254,8 @@ const Messaging = ({route}: any) => {
     const msg = await audioRecorderPlayer.startPlayer();
     console.log(msg);
     audioRecorderPlayer.addPlayBackListener(e => {
-      setCurrentDurationSec(e.duration);
-      setCurrentPositionSec(e.currentPosition);
-      setPlayTime(audioRecorderPlayer.mmssss(Math.floor(e.currentPosition)));
-      setDuration(audioRecorderPlayer.mmssss(Math.floor(e.duration)));
-
       return;
     });
-  };
-
-  const onPausePlay = async () => {
-    await audioRecorderPlayer.pausePlayer();
   };
 
   const onStopPlay = async () => {

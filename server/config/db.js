@@ -9,6 +9,7 @@ const {
   chatMappingTable,
   attachmentsTable,
 } = require("./constants");
+const constants = require("./constants");
 
 let instance = null;
 
@@ -56,14 +57,14 @@ class db {
     try {
       const response = await new Promise((resolve, reject) => {
         const query = `
-        SELECT p.chat_id, c.name, u.username as receiver_name, cm.is_pinned as pinned, cm.chat_mapping_id as pinned_id
-        FROM ${participantsTable} p
-        LEFT JOIN ${chatsTable} c ON c.chat_id = p.chat_id
-        LEFT JOIN ${usersTable} u ON u.user_id = p.user_id
-        LEFT JOIN ${chatMappingTable} cm ON cm.chat_id = p.chat_id AND cm.user_id = p.user_id AND is_pinned = 1
-        WHERE p.user_id = ? ORDER BY p.chat_id DESC;
+          SELECT p.chat_id, c.name, u.username as receiver_name, cm.is_pinned as pinned, cm.chat_mapping_id as pinned_id, cm.is_archived as archived, cm.chat_mapping_id as archive_id
+          FROM ${participantsTable} p
+          LEFT JOIN ${chatsTable} c ON c.chat_id = p.chat_id
+          LEFT JOIN ${usersTable} u ON u.user_id = p.user_id
+          LEFT JOIN ${chatMappingTable} cm ON cm.chat_id = p.chat_id AND cm.user_id = p.user_id AND (cm.is_pinned = 1 OR cm.is_archived = 1)
+          WHERE p.user_id = ?;
         `;
-        connection.query(query, [senderId, senderId], (err, results) => {
+        connection.query(query, [senderId], (err, results) => {
           if (err) reject(new Error(err.message));
           resolve(results);
         });
@@ -326,9 +327,9 @@ class db {
     }
   }
 
-  async getAllMessagesByUsername({ userId }) {
+  async getAllMessagesByUsername({ userId, filter }) {
     try {
-      const chats = await this.getUserChats({ senderId: userId });
+      const chats = await this.getUserChats({ senderId: userId, filter });
 
       for (let i = 0; i < chats.length; i++) {
         const otherUsers = await this.getOtherUsersOfChat({
@@ -417,6 +418,26 @@ class db {
           if (err) reject(new Error(err.message));
           resolve(results);
         });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async archiveChat({ chatId, userId }) {
+    try {
+      const time = new Date();
+      const response = await new Promise((resolve, reject) => {
+        const query = `INSERT INTO ${chatMappingTable} (chat_id, user_id, is_archived, is_pinned, date) VALUES (?,?,?,?,?)`;
+        connection.query(
+          query,
+          [chatId, userId, 1, 0, time],
+          (err, results) => {
+            if (err) reject(new Error(err.message));
+            resolve(results);
+          }
+        );
       });
       return response;
     } catch (error) {

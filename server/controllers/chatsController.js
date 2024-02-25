@@ -91,3 +91,27 @@ exports.deleteChat = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.archiveChat = async (req, res) => {
+  try {
+    const { chatId, userId } = req.body;
+
+    if (chatId && userId) {
+      await db.archiveChat({
+        chatId,
+        userId,
+      });
+
+      const chats = await db.getAllMessagesByUsername({
+        userId,
+      });
+
+      res.json(chats);
+    } else {
+      res.status(500).json({ error: "chatId and userId is required" });
+    }
+  } catch (e) {
+    console.log("Error", e);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
