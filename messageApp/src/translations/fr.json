@@ -42,5 +42,7 @@
   "deleteMessages": "Effacer les messages",
   "missed": "Manqués",
   "newCall": "Nouvel appel",
-  "startGroupCall": "Démarrer un appel de groupe"
+  "startGroupCall": "Démarrer un appel de groupe",
+  "messageSuccessfullyDeleted": "Message effacé avec succès",
+  "conversationSuccessfullyDeleted": "Discussion supprimée avec succès"
 }

@@ -11,6 +11,10 @@ export default function MessageComponent({item, user}: any) {
 
   const [isPlaying, setIsPlaying] = useState(false);
 
+  console.log('====================================');
+  console.log(item);
+  console.log('====================================');
+
   return (
     <View>
       <View
@@ -36,28 +40,47 @@ export default function MessageComponent({item, user}: any) {
           </View>
         ) : (
           <View>
-            <View
-              style={[
-                styles.waveformContainer,
-                !status && {backgroundColor: colors.messageBg},
-              ]}>
-              <TouchableOpacity onPress={() => setIsPlaying(prev => !prev)}>
+            {item.attachment_type == 0 && (
+              <View
+                style={{
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                  marginBottom: 5,
+                }}>
                 <Image
-                  source={isPlaying ? images.pause : images.play}
-                  style={styles.playIcon}
+                  source={{
+                    uri: `${constants.ip}/uploads/${item.attachment_url}`,
+                  }}
+                  style={{width: 250, height: 200}}
                 />
-              </TouchableOpacity>
-              <WaveForm
-                play={isPlaying}
-                autoPlay={false}
-                style={[styles.waveform]}
-                waveFormStyle={{
-                  waveColor: colors.blueLight,
-                  scrubColor: colors.primaryBlue,
-                }}
-                source={{uri: `${constants.ip}/audios/${item.attachment_url}`}}
-              />
-            </View>
+              </View>
+            )}
+            {item.attachment_type == 2 && (
+              <View
+                style={[
+                  styles.waveformContainer,
+                  !status && {backgroundColor: colors.messageBg},
+                ]}>
+                <TouchableOpacity onPress={() => setIsPlaying(prev => !prev)}>
+                  <Image
+                    source={isPlaying ? images.pause : images.play}
+                    style={styles.playIcon}
+                  />
+                </TouchableOpacity>
+                <WaveForm
+                  play={isPlaying}
+                  autoPlay={false}
+                  style={[styles.waveform]}
+                  waveFormStyle={{
+                    waveColor: colors.blueLight,
+                    scrubColor: colors.primaryBlue,
+                  }}
+                  source={{
+                    uri: `${constants.ip}/audios/${item.attachment_url}`,
+                  }}
+                />
+              </View>
+            )}
           </View>
         )}
         <Text style={{marginLeft: 40}}>

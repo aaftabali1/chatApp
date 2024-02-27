@@ -3,6 +3,8 @@ const database = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoute");
 const fs = require("fs");
+const multer = require("multer");
+const path = require("path");
 const app = express();
 const PORT = 4000;
 
@@ -20,19 +22,6 @@ app.use("/users", userRoutes);
 app.use("/chats", chatRoutes);
 
 const db = database.getDbServiceInstance();
-
-// app.get("/api/chats", async (req, res) => {
-//   try {
-//     const chats = await db.getAllMessagesByUsername({
-//       userId: req.query.username,
-//     });
-
-//     res.json(chats);
-//   } catch (e) {
-//     console.log("Error", e);
-//     res.json([]);
-//   }
-// });
 
 app.get("/api/calls", async (req, res) => {
   try {
@@ -81,12 +70,11 @@ http.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
 });
 
-const generateID = () => Math.random().toString(36).substring(2, 10);
-
 const socketIO = require("socket.io")(http, {
   cors: {
     origin: "<http://localhost:3000>",
   },
+  maxHttpBufferSize: 1e8,
 });
 
 socketIO.use((socket, next) => {
@@ -346,5 +334,76 @@ socketIO.on("connection", (socket) => {
     } catch (e) {
       console.log("Error in sending message", e);
     }
+  });
+
+  socket.on("uploadImage", (data) => {
+    // Check if fileData is an object and contains the base64 property
+    if (typeof data === "object") {
+      console.log("fileData is an object", data);
+
+      const filePath = `${__dirname}/uploads/${data.name}`;
+
+      if (data.base64) {
+        console.log("base64 property found:", data.base64);
+
+        // Convert fileData.base64 to a Buffer
+        const fileBuffer = Buffer.from(data.base64, "base64");
+
+        fs.writeFile(filePath, fileBuffer, async (err) => {
+          if (err) {
+            console.log(err);
+          } else {
+            const senderUser = await db.getUserById({ userId: data.senderId });
+            const receiverUser = await db.getUserById({
+              userId: data.receiverId,
+            });
+            const messageData = await db.insertMessage({
+              message: "",
+              read: false,
+              chatId: data.chatId,
+              senderId: data.senderId,
+              receiverId: "",
+            });
+            await db.addImage({
+              messageId: messageData.insertId,
+              imageUrl: data.name,
+            });
+            const allMessages = await db.getUserMessages({
+              chatId: data.chatId,
+              offset: data.offset,
+            });
+            socket.emit("getNewMessage", allMessages);
+            socket.emit("allMessageList");
+            socket
+              .to(receiverUser[0].socket)
+              .emit("getNewMessage", allMessages);
+            socket.to(receiverUser[0].socket).emit("allMessageList");
+            socket.to(senderUser[0].socket).emit("getNewMessage", allMessages);
+            socket.to(senderUser[0].socket).emit("allMessageList");
+          }
+        });
+      } else {
+        console.error("base64 property not found");
+      }
+    } else {
+      console.error("Invalid file data format");
+    }
+  });
+
+  socket.on("videoChunk", ({ chunk, fileName }) => {
+    const filePath = `${__dirname}/uploads/${fileName}`;
+    // Append video chunk to a file or process it as needed
+    fs.appendFile(filePath, Buffer.from(chunk, "base64"), (err) => {
+      if (err) {
+        console.error("Error appending video chunk:", err);
+      } else {
+        console.log("Video chunk received");
+      }
+    });
+  });
+
+  socket.on("videoEnd", () => {
+    console.log("Video transmission completed");
+    // You can perform any cleanup or final processing here
   });
 });

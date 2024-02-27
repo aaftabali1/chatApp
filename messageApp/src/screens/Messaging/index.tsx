@@ -22,7 +22,11 @@ import MessageComponent from '../../components/MessageComponent';
 import styles from './styles';
 import socket from '../../utils/socket';
 import {useTranslation} from 'react-i18next';
-import {NavigationProp, useNavigation} from '@react-navigation/native';
+import {
+  NavigationProp,
+  useFocusEffect,
+  useNavigation,
+} from '@react-navigation/native';
 import images from '../../utils/images';
 import constants from '../../utils/constants';
 import {useSelector} from 'react-redux';
@@ -62,6 +66,68 @@ const Messaging = ({route}: any) => {
   useLayoutEffect(() => {
     navigation.setOptions({title: item.receiver_name});
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const data = route.params.data;
+
+      if (data == undefined) return;
+      uploadMedia(data[0]);
+    }, [route.params]),
+  );
+
+  const uploadMedia = async (selectedMedia: any) => {
+    if (selectedMedia) {
+      const mediaType = selectedMedia.type.startsWith('image')
+        ? 'image'
+        : 'video';
+
+      if (mediaType == 'image') {
+        const base64Data = await RNFS.readFile(selectedMedia.uri, 'base64');
+
+        const data = {
+          base64: base64Data,
+          uri: selectedMedia.uri,
+          type: selectedMedia.type,
+          name: selectedMedia.fileName || 'file',
+          chatId: item.chat_id,
+          senderId: userId,
+          receiverId: item.receiver_id,
+          offset,
+        };
+        socket.emit('uploadImage', data);
+      } else {
+        try {
+          const fileSize = selectedMedia.fileSize;
+          const chunkSize = 1024 * 1024; // 1 MB chunk size
+          let offset = 0;
+
+          // Read and send video data in chunks
+          while (offset < fileSize) {
+            const chunk = await RNFS.read(
+              selectedMedia.uri,
+              chunkSize,
+              offset,
+              'base64',
+            );
+            socket.emit('videoChunk', {
+              chunk,
+              fileName: selectedMedia.fileName,
+            });
+            offset += chunk.length;
+          }
+
+          // Signal end of transmission
+          socket.emit('videoEnd');
+        } catch (error) {
+          console.error('Error sending video:', error);
+        }
+        // socket.emit('uploadVideo', data, (status: any) => {
+        //   console.log(status);
+        // });
+      }
+    }
+  };
 
   const findUserCallback = useCallback(
     (roomChats: any) => {
@@ -385,10 +451,13 @@ const Messaging = ({route}: any) => {
             <TouchableOpacity onPress={() => onStartRecord()}>
               <Image source={images.mic} style={styles.micImage} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => onStopRecord()}>
+            <TouchableOpacity onPress={() => {}}>
               <Image source={images.emoji} style={styles.micImage} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => onStartPlay()}>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('PhotoVideo', {item, receiver})
+              }>
               <Image source={images.videoPhoto} style={styles.videoPhoto} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => onStopPlay()}>

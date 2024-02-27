@@ -42,5 +42,7 @@
   "deleteMessages": "Delete Messages",
   "missed": "Missed",
   "newCall": "New Call",
-  "startGroupCall": "Start a Group Call"
+  "startGroupCall": "Start a Group Call",
+  "messageSuccessfullyDeleted": "Message Successfully Deleted",
+  "conversationSuccessfullyDeleted": "Conversation Successfully Deleted"
 }

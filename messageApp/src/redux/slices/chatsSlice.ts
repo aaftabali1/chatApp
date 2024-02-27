@@ -12,6 +12,12 @@ interface ChatsState {
   unPinError: string | undefined | null;
   archiveChatLoading: boolean;
   archiveChatError: string | undefined | null;
+  unarchiveChatLoading: boolean;
+  unarchiveChatError: string | undefined | null;
+  deleteChatLoading: boolean;
+  deleteChatError: string | undefined | null;
+  clearChatLoading: boolean;
+  clearChatError: string | undefined | null;
 }
 
 const initialState: ChatsState = {
@@ -24,6 +30,12 @@ const initialState: ChatsState = {
   unPinError: null,
   archiveChatLoading: false,
   archiveChatError: null,
+  unarchiveChatLoading: false,
+  unarchiveChatError: null,
+  deleteChatLoading: false,
+  deleteChatError: null,
+  clearChatLoading: false,
+  clearChatError: null,
 };
 
 export const fetchChats = createAsyncThunk(
@@ -54,6 +66,33 @@ export const archiveChat = createAsyncThunk(
   'chats/archiveChat',
   async (datas: any) => {
     const res = await axios.post(constants.ip + '/chats/archive-chat', datas);
+    const data = await res.data;
+    return data;
+  },
+);
+
+export const unarchiveChat = createAsyncThunk(
+  'chats/unarchiveChat',
+  async (datas: any) => {
+    const res = await axios.post(constants.ip + '/chats/unarchive-chat', datas);
+    const data = await res.data;
+    return data;
+  },
+);
+
+export const deleteChat = createAsyncThunk(
+  'chats/deleteChat',
+  async (datas: any) => {
+    const res = await axios.post(constants.ip + '/chats/delete-chat', datas);
+    const data = await res.data;
+    return data;
+  },
+);
+
+export const clearChat = createAsyncThunk(
+  'chats/clearChat',
+  async (datas: any) => {
+    const res = await axios.post(constants.ip + '/chats/clear-chat', datas);
     const data = await res.data;
     return data;
   },
@@ -111,6 +150,42 @@ const chatsSlice = createSlice({
     builder.addCase(archiveChat.rejected, (state, action) => {
       state.archiveChatLoading = false;
       state.archiveChatError = action.error.message;
+    });
+    builder.addCase(unarchiveChat.pending, state => {
+      state.unarchiveChatLoading = true;
+      state.unarchiveChatError = null;
+    });
+    builder.addCase(unarchiveChat.fulfilled, (state, action) => {
+      state.unarchiveChatLoading = false;
+      state.chats = action.payload;
+    });
+    builder.addCase(unarchiveChat.rejected, (state, action) => {
+      state.unarchiveChatLoading = false;
+      state.unarchiveChatError = action.error.message;
+    });
+    builder.addCase(deleteChat.pending, state => {
+      state.deleteChatLoading = true;
+      state.deleteChatError = null;
+    });
+    builder.addCase(deleteChat.fulfilled, (state, action) => {
+      state.deleteChatLoading = false;
+      state.chats = action.payload;
+    });
+    builder.addCase(deleteChat.rejected, (state, action) => {
+      state.deleteChatLoading = false;
+      state.deleteChatError = action.error.message;
+    });
+    builder.addCase(clearChat.pending, state => {
+      state.clearChatLoading = true;
+      state.clearChatError = null;
+    });
+    builder.addCase(clearChat.fulfilled, (state, action) => {
+      state.clearChatLoading = false;
+      state.chats = action.payload;
+    });
+    builder.addCase(clearChat.rejected, (state, action) => {
+      state.clearChatLoading = false;
+      state.clearChatError = action.error.message;
     });
   },
 });

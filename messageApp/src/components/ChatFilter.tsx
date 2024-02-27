@@ -8,17 +8,31 @@ import {useTranslation} from 'react-i18next';
 import {globalStyles} from '../utils/commonStyles';
 import RadioButton from './RadioButton';
 
+interface ChatFilterProps {
+  isVisible: boolean;
+  hideFilter: () => void;
+  filterValue: number;
+  setFilterValue: (_: number) => void;
+  allCount: string;
+  archiveCount: string;
+  unreadCount: string;
+  mutedCount: string;
+  merchantCount: string;
+  contactCount: string;
+}
+
 const ChatFilter = ({
   isVisible,
   hideFilter,
   filterValue,
   setFilterValue,
-}: {
-  isVisible: boolean;
-  hideFilter: () => void;
-  filterValue: number;
-  setFilterValue: (_: number) => void;
-}) => {
+  allCount,
+  archiveCount,
+  unreadCount,
+  mutedCount,
+  merchantCount,
+  contactCount,
+}: ChatFilterProps) => {
   const {t} = useTranslation();
 
   const [selectedFilter, setSelectedFilter] = useState(filterValue);
@@ -43,42 +57,42 @@ const ChatFilter = ({
             setChecked={() => {
               setSelectedFilter(0);
             }}
-            title={`${t('all')} (63)`}
+            title={`${t('all')} (${allCount})`}
           />
           <RadioButton
             checked={selectedFilter == 1}
             setChecked={() => {
               setSelectedFilter(1);
             }}
-            title={`${t('archivedMessages')} (27)`}
+            title={`${t('archivedMessages')} (${archiveCount})`}
           />
           <RadioButton
             checked={selectedFilter == 2}
             setChecked={() => {
               setSelectedFilter(2);
             }}
-            title={`${t('unreadMessages')} (2)`}
+            title={`${t('unreadMessages')} (${unreadCount})`}
           />
           <RadioButton
             checked={selectedFilter == 3}
             setChecked={() => {
               setSelectedFilter(3);
             }}
-            title={`${t('mutedMessages')} (1)`}
+            title={`${t('mutedMessages')} (${mutedCount})`}
           />
           <RadioButton
             checked={selectedFilter == 4}
             setChecked={() => {
               setSelectedFilter(4);
             }}
-            title={`${t('merchantMessages')} (0)`}
+            title={`${t('merchantMessages')} (${merchantCount})`}
           />
           <RadioButton
             checked={selectedFilter == 5}
             setChecked={() => {
               setSelectedFilter(5);
             }}
-            title={`${t('contactMessages')} (63)`}
+            title={`${t('contactMessages')} (${contactCount})`}
           />
 
           <TouchableOpacity

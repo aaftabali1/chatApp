@@ -17,6 +17,7 @@ import {getCurrentRouteName, navigationRef} from './utils/navigationRef';
 import constants from './utils/constants';
 import Settings from './screens/Settings';
 import Contacts from './screens/Contacts';
+import PhotoVideo from './screens/PhotoVideo';
 import {Provider} from 'react-redux';
 import store from './redux/store';
 import notifee, {AndroidImportance} from '@notifee/react-native';
@@ -178,6 +179,14 @@ export default function App() {
           <Stack.Screen
             name="IncomingVoiceCall"
             component={IncomingVoiceCall}
+            options={{
+              headerShown: false,
+            }}
+          />
+
+          <Stack.Screen
+            name="PhotoVideo"
+            component={PhotoVideo}
             options={{
               headerShown: false,
             }}

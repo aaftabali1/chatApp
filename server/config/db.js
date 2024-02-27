@@ -425,6 +425,21 @@ class db {
     }
   }
 
+  async addImage({ messageId, imageUrl }) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = `INSERT INTO ${attachmentsTable} (message_id, attachment_type, attachment_url) VALUES (?,?,?)`;
+        connection.query(query, [messageId, 0, imageUrl], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async archiveChat({ chatId, userId }) {
     try {
       const time = new Date();
@@ -438,6 +453,51 @@ class db {
             resolve(results);
           }
         );
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async unarchiveChat({ archiveChatId }) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = `DELETE FROM ${chatMappingTable} WHERE chat_mapping_id = ?`;
+        connection.query(query, [archiveChatId], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async deleteChat({ chatId, userId }) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = `UPDATE ${participantsTable} SET deleted = 1 WHERE chat_id = ? AND user_id = ?`;
+        connection.query(query, [chatId, userId], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async clearChat({ chatId, userId }) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = `UPDATE ${participantsTable} SET cleared = 1 WHERE chat_id = ? AND user_id = ?`;
+        connection.query(query, [chatId, userId], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
       });
       return response;
     } catch (error) {

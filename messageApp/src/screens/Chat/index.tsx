@@ -31,9 +31,12 @@ import SuccessModel from '../../components/Success';
 import TwoBtnAlert from '../../components/TwoBtnAlert';
 import {
   archiveChat,
+  clearChat,
+  deleteChat,
   fetchChats,
   pinChat,
   unPinChat,
+  unarchiveChat,
 } from '../../redux/slices/chatsSlice';
 import constants from '../../utils/constants';
 
@@ -143,13 +146,8 @@ const Chat = () => {
   };
 
   const handlePinUnPinChat = () => {
+    handlePinChat({chatId: actionChatId.toString()});
     setShowChatActions(false);
-    setTimeout(() => {
-      setShowMessagePinnedModal(true);
-      setTimeout(() => {
-        setShowMessagePinnedModal(false);
-      }, 2000);
-    }, 500);
   };
 
   const handleSecrectChat = () => {
@@ -166,10 +164,15 @@ const Chat = () => {
 
   const handleDeleteAllMessages = () => {
     setShowChatActions(false);
+    handleClearChat();
   };
 
   const handleDeleteConversation = () => {
+    // handleDeleteChat();
     setShowChatActions(false);
+    setTimeout(() => {
+      setShowDeleteModal(true);
+    }, 500);
   };
 
   const handlePinChat = ({chatId}: {chatId: string}) => {
@@ -184,6 +187,7 @@ const Chat = () => {
       ) {
         setShowArchiveSuccessModal(true);
         setShowArchiveModal(false);
+        setActionChatId(0);
         setTimeout(() => {
           setShowArchiveSuccessModal(false);
         }, 2000);
@@ -192,8 +196,50 @@ const Chat = () => {
     prevChatsReducer.current = chatsReducer;
   }, [chatsReducer.archiveChatLoading]);
 
+  useEffect(() => {
+    if (prevChatsReducer.current !== null) {
+      if (
+        prevChatsReducer.current?.deleteChatLoading == true &&
+        chatsReducer.deleteChatLoading == false
+      ) {
+        setShowDeleteSuccessModal(true);
+        setShowDeleteModal(false);
+        setActionChatId(0);
+        setTimeout(() => {
+          setShowDeleteSuccessModal(false);
+        }, 2000);
+      }
+    }
+    prevChatsReducer.current = chatsReducer;
+  }, [chatsReducer.deleteChatLoading]);
+
+  useEffect(() => {
+    if (prevChatsReducer.current !== null) {
+      if (
+        prevChatsReducer.current?.clearChatLoading == true &&
+        chatsReducer.clearChatLoading == false
+      ) {
+        setShowDeleteMessageSuccessModal(true);
+        setShowDeleteMessageModal(false);
+        setActionChatId(0);
+        setTimeout(() => {
+          setShowDeleteMessageSuccessModal(false);
+        }, 2000);
+      }
+    }
+    prevChatsReducer.current = chatsReducer;
+  }, [chatsReducer.clearChatLoading]);
+
   const handleArchiveChat = () => {
     dispatch(archiveChat({chatId: actionChatId, userId}));
+  };
+
+  const handleDeleteChat = () => {
+    dispatch(deleteChat({chatId: actionChatId, userId}));
+  };
+
+  const handleClearChat = () => {
+    dispatch(clearChat({chatId: actionChatId, userId}));
   };
 
   const allMessages = () => {
@@ -262,6 +308,7 @@ const Chat = () => {
                 <ChatComponent
                   item={item}
                   onLongPress={() => {
+                    setActionChatId(item.chat_id);
                     setShowChatActions(true);
                   }}
                 />
@@ -273,6 +320,7 @@ const Chat = () => {
                 <View style={styles.leftHiddenItems}>
                   <TouchableOpacity
                     onPress={() => {
+                      setActionChatId(data.item.chat_id);
                       setShowDeleteModal(true);
                     }}
                     style={styles.rightFirstItem}>
@@ -292,10 +340,6 @@ const Chat = () => {
                   <TouchableOpacity
                     onPress={() => {
                       handlePinChat({chatId: data.item.chat_id});
-                      // setShowMessagePinnedModal(true);
-                      // setTimeout(() => {
-                      //   setShowMessagePinnedModal(false);
-                      // }, 2000);
                     }}
                     style={styles.rightThirdItem}>
                     <Image source={images.pin} style={styles.trashImage} />
@@ -325,6 +369,18 @@ const Chat = () => {
         setFilterValue={setFilterValue}
         isVisible={showFilter}
         hideFilter={() => setShowFilter(false)}
+        allCount={messages
+          .filter((item: any) => item?.pinned != 1 && item?.archived != 1)
+          .length.toString()}
+        archiveCount={messages
+          .filter((item: any) => item?.archived == 1 && item?.pinned != 1)
+          .length.toString()}
+        unreadCount={messages
+          .filter((item: any) => item?.archived != 1 && item?.unreadCount > 0)
+          .length.toString()}
+        mutedCount={'0'}
+        merchantCount={'0'}
+        contactCount={'0'}
       />
       <ChatAction
         isVisible={showChatActions}
@@ -333,7 +389,12 @@ const Chat = () => {
         onPressSecretChat={handleSecrectChat}
         onPressMarkRead={handleMarkReadChat}
         onPressContactDetails={handleAccessContactDetails}
-        onPressDeleteMessages={handleDeleteAllMessages}
+        onPressDeleteMessages={() => {
+          setShowChatActions(false);
+          setTimeout(() => {
+            setShowDeleteMessageModal(true);
+          }, 500);
+        }}
         onPressDeleteConversation={handleDeleteConversation}
       />
       <SuccessModel
@@ -350,11 +411,11 @@ const Chat = () => {
       />
       <SuccessModel
         visible={showDeleteSuccessModal}
-        descText={t('conversationSuccessfullyArchived')}
+        descText={t('conversationSuccessfullyDeleted')}
       />
       <SuccessModel
         visible={showDeleteMessageSuccessModal}
-        descText={t('conversationSuccessfullyArchived')}
+        descText={t('messageSuccessfullyDeleted')}
       />
       {showArchiveModal && (
         <TwoBtnAlert
@@ -382,15 +443,15 @@ const Chat = () => {
       )}
       {showDeleteModal && (
         <TwoBtnAlert
-          descText={t('deleteChatModalTitle')}
+          descText={t('deleteChatModalTitle').replace(
+            '{name}',
+            messages.find((item: any) => item.chat_id == actionChatId)
+              ?.receiver_name,
+          )}
           okText={t('deleteConversation')}
           cancelText={t('cancel')}
           okAction={() => {
-            setShowDeleteSuccessModal(true);
-            setShowDeleteModal(false);
-            setTimeout(() => {
-              setShowDeleteSuccessModal(false);
-            }, 2000);
+            handleDeleteChat();
           }}
           secondaryDesc={t('deleteChatModalDescription')}
           cancelAction={() => {
@@ -410,11 +471,7 @@ const Chat = () => {
           okText={t('deleteMessages')}
           cancelText={t('cancel')}
           okAction={() => {
-            setShowDeleteMessageSuccessModal(true);
-            setShowDeleteMessageModal(false);
-            setTimeout(() => {
-              setShowDeleteMessageSuccessModal(false);
-            }, 2000);
+            handleDeleteAllMessages();
           }}
           secondaryDesc={t('deleteMessageModalDescription')}
           cancelAction={() => {
