@@ -224,6 +224,24 @@ export const styles = StyleSheet.create({
     left: 10,
     tintColor: colors.white,
   },
+  playOuter: {
+    position: 'absolute',
+    top: '40%',
+    left: '40%',
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 200,
+  },
+  playImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
 });
 
 export const globalStyles = StyleSheet.create({

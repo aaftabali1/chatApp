@@ -440,6 +440,21 @@ class db {
     }
   }
 
+  async addVideo({ messageId, videoUrl }) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        const query = `INSERT INTO ${attachmentsTable} (message_id, attachment_type, attachment_url) VALUES (?,?,?)`;
+        connection.query(query, [messageId, 1, videoUrl], (err, results) => {
+          if (err) reject(new Error(err.message));
+          resolve(results);
+        });
+      });
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async archiveChat({ chatId, userId }) {
     try {
       const time = new Date();

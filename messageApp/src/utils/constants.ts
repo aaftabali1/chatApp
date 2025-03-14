@@ -1,5 +1,5 @@
 export default {
-  ip: 'http://192.168.29.114:4000',
+  ip: 'http://192.168.29.114:4000', // my jio fiber ip
   incomingCall: 'INCOMING_CALL',
   outgoingCall: 'OUTGOING_CALL',
   webRTC: 'WEBRTC',

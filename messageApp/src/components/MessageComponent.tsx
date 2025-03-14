@@ -1,19 +1,39 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, Text, Image, TouchableOpacity} from 'react-native';
 import {styles} from '../utils/commonStyles';
 import constants from '../utils/constants';
 import WaveForm from 'react-native-audiowaveform';
 import images from '../utils/images';
 import colors from '../utils/colors';
+import ScaledImage from './ScaledImage';
+import {createThumbnail} from 'react-native-create-thumbnail';
 
-export default function MessageComponent({item, user}: any) {
+export default function MessageComponent({
+  item,
+  user,
+  toggleImageVideoSlider,
+}: any) {
   const status = item.sender_id != user;
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [thumbnail, setThumbnail] = useState({
+    path: '',
+    width: 200,
+    height: 200,
+  });
 
-  console.log('====================================');
-  console.log(item);
-  console.log('====================================');
+  useEffect(() => {
+    if (item.attachment_type != 1) return;
+    createThumbnail({
+      url: `${constants.ip}/uploads/${item.attachment_url}`,
+      timeStamp: 1,
+    })
+      .then(response => {
+        console.log({response});
+        setThumbnail(response);
+      })
+      .catch(err => console.log({err}));
+  }, []);
 
   return (
     <View>
@@ -41,18 +61,50 @@ export default function MessageComponent({item, user}: any) {
         ) : (
           <View>
             {item.attachment_type == 0 && (
-              <View
-                style={{
-                  borderRadius: 10,
-                  overflow: 'hidden',
-                  marginBottom: 5,
-                }}>
-                <Image
-                  source={{
-                    uri: `${constants.ip}/uploads/${item.attachment_url}`,
-                  }}
-                  style={{width: 250, height: 200}}
-                />
+              <View style={{flexDirection: 'row', alignItems: 'flex-end'}}>
+                {status && (
+                  <Image
+                    source={require('../assets/images/user.png')}
+                    style={styles.mavatar}
+                  />
+                )}
+                <View
+                  style={{
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    marginBottom: 5,
+                  }}>
+                  <ScaledImage
+                    uri={`${constants.ip}/uploads/${item.attachment_url}`}
+                    width={200}
+                    height={200}
+                  />
+                </View>
+              </View>
+            )}
+            {item.attachment_type == 1 && (
+              <View style={{flexDirection: 'row', alignItems: 'flex-end'}}>
+                <TouchableOpacity
+                  onPress={toggleImageVideoSlider}
+                  style={{
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    marginBottom: 5,
+                  }}>
+                  <Image
+                    source={{
+                      uri: thumbnail.path,
+                    }}
+                    style={{
+                      width: 250,
+                      height: 250,
+                    }}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.playOuter}>
+                    <Image source={images.play} style={styles.playImage} />
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
             {item.attachment_type == 2 && (

@@ -390,20 +390,59 @@ socketIO.on("connection", (socket) => {
     }
   });
 
-  socket.on("videoChunk", ({ chunk, fileName }) => {
+  let writeStream = null;
+
+  socket.on("videoChunk", ({ chunk, fileName, offsets }) => {
     const filePath = `${__dirname}/uploads/${fileName}`;
-    // Append video chunk to a file or process it as needed
-    fs.appendFile(filePath, Buffer.from(chunk, "base64"), (err) => {
-      if (err) {
-        console.error("Error appending video chunk:", err);
-      } else {
-        console.log("Video chunk received");
-      }
-    });
+
+    // File path to save the video chunks
+    // const filePaths = path.join(__dirname, "video_chunks", fileName);
+
+    try {
+      // Create or append the chunk to the video file
+      fs.appendFileSync(filePath, Buffer.from(chunk, "base64"));
+
+      console.log("Video chunk received and saved:", offsets);
+    } catch (error) {
+      console.error("Error appending video chunk:", error);
+    }
+
+    // // Append video chunk to a file or process it as needed
+    // fs.appendFile(filePath, Buffer.from(chunk, "base64"), (err) => {
+    //   if (err) {
+    //     console.error("Error appending video chunk:", err);
+    //   } else {
+    //     console.log("Video chunk received");
+    //   }
+    // });
   });
 
-  socket.on("videoEnd", () => {
+  socket.on("videoEnd", async (data) => {
     console.log("Video transmission completed");
-    // You can perform any cleanup or final processing here
+    const senderUser = await db.getUserById({ userId: data.senderId });
+    const receiverUser = await db.getUserById({
+      userId: data.receiverId,
+    });
+    const messageData = await db.insertMessage({
+      message: "",
+      read: false,
+      chatId: data.chatId,
+      senderId: data.senderId,
+      receiverId: "",
+    });
+    await db.addVideo({
+      messageId: messageData.insertId,
+      videoUrl: data.name,
+    });
+    const allMessages = await db.getUserMessages({
+      chatId: data.chatId,
+      offset: data.offset,
+    });
+    socket.emit("getNewMessage", allMessages);
+    socket.emit("allMessageList");
+    socket.to(receiverUser[0].socket).emit("getNewMessage", allMessages);
+    socket.to(receiverUser[0].socket).emit("allMessageList");
+    socket.to(senderUser[0].socket).emit("getNewMessage", allMessages);
+    socket.to(senderUser[0].socket).emit("allMessageList");
   });
 });

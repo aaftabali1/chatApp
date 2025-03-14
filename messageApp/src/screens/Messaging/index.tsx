@@ -41,6 +41,7 @@ import AudioRecorderPlayer, {
 import RNFS from 'react-native-fs';
 import WaveForm from 'react-native-audiowaveform';
 import colors from '../../utils/colors';
+import ImageVideoSlider from '../../components/ImageVideoSlider';
 
 const audioRecorderPlayer = new AudioRecorderPlayer();
 
@@ -62,6 +63,7 @@ const Messaging = ({route}: any) => {
   const [audioBase, setAudioBase] = useState<any>('');
   const [audioRecording, setAudioRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isImageSliderVisible, setIsImageSliderVisible] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({title: item.receiver_name});
@@ -77,6 +79,9 @@ const Messaging = ({route}: any) => {
   );
 
   const uploadMedia = async (selectedMedia: any) => {
+    selectedMedia.fileName = `${
+      Math.floor(Math.random() * (999999999 - 123 + 1)) + 123
+    }-${selectedMedia.fileName}`;
     if (selectedMedia) {
       const mediaType = selectedMedia.type.startsWith('image')
         ? 'image'
@@ -100,31 +105,42 @@ const Messaging = ({route}: any) => {
         try {
           const fileSize = selectedMedia.fileSize;
           const chunkSize = 1024 * 1024; // 1 MB chunk size
-          let offset = 0;
+          let offsets = 0;
+
+          console.log('====================================');
+          console.log(selectedMedia.fileSize);
+          console.log('====================================');
 
           // Read and send video data in chunks
-          while (offset < fileSize) {
+          while (offsets < fileSize) {
             const chunk = await RNFS.read(
               selectedMedia.uri,
               chunkSize,
-              offset,
+              offsets,
               'base64',
             );
             socket.emit('videoChunk', {
               chunk,
               fileName: selectedMedia.fileName,
+              offsets,
             });
-            offset += chunk.length;
+            offsets += chunk.length;
+            console.log('====================================');
+            console.log(offsets, 'offsets');
+            console.log('====================================');
           }
 
           // Signal end of transmission
-          socket.emit('videoEnd');
+          socket.emit('videoEnd', {
+            name: selectedMedia.fileName || 'file',
+            chatId: item.chat_id,
+            senderId: userId,
+            receiverId: item.receiver_id,
+            offset,
+          });
         } catch (error) {
           console.error('Error sending video:', error);
         }
-        // socket.emit('uploadVideo', data, (status: any) => {
-        //   console.log(status);
-        // });
       }
     }
   };
@@ -418,7 +434,13 @@ const Messaging = ({route}: any) => {
           onScroll={handleScroll}
           showsVerticalScrollIndicator={false}
           renderItem={({item}) => (
-            <MessageComponent item={item} user={userId} />
+            <MessageComponent
+              item={item}
+              user={userId}
+              toggleImageVideoSlider={() => {
+                setIsImageSliderVisible(prevState => !prevState);
+              }}
+            />
           )}
           keyExtractor={(item: any, i: number) => `${i}-${item.id}`}
         />
@@ -446,6 +468,7 @@ const Messaging = ({route}: any) => {
             </Pressable>
           </View>
         )}
+        {/** Show bottom actions to record audio and send image and videos */}
         {audioPath == '' && (
           <View style={styles.extraOptions}>
             <TouchableOpacity onPress={() => onStartRecord()}>
@@ -465,6 +488,7 @@ const Messaging = ({route}: any) => {
             </TouchableOpacity>
           </View>
         )}
+        {/** Show audio recording controls */}
         {audioPath != '' && (
           <View style={styles.messaginginputContainerInner}>
             <TouchableOpacity
@@ -514,28 +538,16 @@ const Messaging = ({route}: any) => {
               </Pressable>
             )}
           </View>
-          // <View
-          //   style={{
-          //     flexDirection: 'row',
-          //     alignItems: 'center',
-          //     justifyContent: 'space-around',
-          //     marginTop: 20,
-          //   }}>
-          //   <Text style={styles.recordTime}>{recordTime?.substring(0, 5)}</Text>
-          //   <TouchableOpacity onPress={() => onDeleteRecord()}>
-          //     <Image source={images.trash} style={styles.trashImage} />
-          //   </TouchableOpacity>
-          //   <TouchableOpacity onPress={() => onStopRecord()}>
-          //     <Text>Stop</Text>
-          //   </TouchableOpacity>
-          //   <TouchableOpacity onPress={handleSendAudio}>
-          //     <Image
-          //       source={images.send}
-          //       style={{width: 20, height: 20, resizeMode: 'contain'}}
-          //     />
-          //   </TouchableOpacity>
-          // </View>
         )}
+        <ImageVideoSlider
+          toggleSlider={() => setIsImageSliderVisible(false)}
+          data={chatMessages.filter(
+            (messageItem: any) =>
+              messageItem.attachment_id != null &&
+              messageItem.attachment_type != 2,
+          )}
+          showSlider={isImageSliderVisible}
+        />
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
